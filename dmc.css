@@ -1,0 +1,301 @@
+/* ============================================================================
+   ENCY Core — Digital Machine Center. Tokens and shared components come from
+   styles.css; only page-specific pieces live here. The page shares the
+   Extension Store anatomy: filters panel + catalog panel on one plate tone.
+   ========================================================================= */
+
+/* header: user chip on the right (as in the Extension Store) */
+.header__user { display:flex; align-items:center; gap:8px; height:32px; padding:0 8px 0 4px;
+  border-radius:var(--ec-radius); transition:background .12s; }
+.header__user:hover { background:var(--ec-fg-8); }
+.header__user span { font-size:12px; color:var(--ec-fg-80); }
+.header__mark { width:16px; height:16px; flex-shrink:0; color:var(--ec-fg-72); }
+.header__user .chev { width:13px; height:13px; color:var(--ec-fg-48); }
+
+/* segmented switch: one track, 2px inset; concentric radii — the segment sits
+   2px inside an 8px track, so its own corner is 8 - 2 = 6px */
+.segmented { display:flex; gap:2px; padding:2px; border-radius:var(--ec-radius-md);
+  background:var(--ec-fg-4); }
+.segmented button { height:20px; padding:0 10px; border-radius:6px; font-size:11px;
+  color:var(--ec-fg-64); transition:background .12s,color .12s; }
+.segmented button:hover { color:var(--ec-fg-100); }
+.segmented--full { width:100%; }
+.segmented--full button { flex:1; min-width:0; height:24px; padding:0 6px; font-size:12px; }
+
+/* scope switch on the rail needs the heavier track; picked = solid plate */
+.header .segmented { flex-shrink:0; background:var(--ec-fg-12); }
+.header .segmented button { height:24px; padding:0 12px; font-size:12px; }
+.header .segmented button.is-on { background:var(--ec-fg-100); color:var(--ec-bg); }
+.header .segmented button.is-on .seg__n { color:inherit; opacity:.4; }
+/* a picked kind wears its category hue (the kindtag palette); All stays the
+   neutral solid plate */
+.header .segmented button.is-on.seg--post   { background:rgba(70,172,255,.18);  color:var(--ec-blue-soft); }
+.header .segmented button.is-on.seg--interp { background:rgba(149,132,235,.2);  color:var(--op-violet); }
+.header .segmented button.is-on.seg--schema { background:var(--ec-green-16);    color:var(--ec-badge); }
+.header .segmented button.is-on.seg--kit    { background:rgba(235,193,74,.18);  color:var(--ec-amber); }
+.header .segmented button.is-on[class*="seg--"] .seg__n { opacity:.55; }
+:root[data-theme="light"] .header .segmented button.is-on.seg--post { color:var(--ec-blue); }
+:root[data-theme="light"] .header .segmented button.is-on.seg--kit  { color:#8a6d14; }
+.seg__n { margin-left:5px; font-style:normal; color:var(--ec-fg-48);
+  font-variant-numeric:tabular-nums; }
+
+/* find cluster matches the 28px scope switch */
+.header .panel__settings { width:28px; height:28px; position:relative; }
+.header .search { width:280px; flex-shrink:0; margin-left:4px; }
+.header .search .field { height:28px; padding:0 27px 0 8px; }
+.header .search svg { left:auto; right:7px; width:16px; height:16px; }
+.panel__settings.is-on { background:var(--ec-fg-8); color:var(--ec-fg-100); }
+.panel__badge { position:absolute; top:-1px; right:-1px; display:grid; place-items:center;
+  min-width:13px; height:13px; padding:0 3px; border-radius:999px;
+  background:var(--ec-green); color:#04150e; font-size:9px; font-weight:600;
+  font-variant-numeric:tabular-nums; }
+
+/* ================================================================ SIDEBAR === */
+.side { width:232px; flex-shrink:0; background:var(--ec-card); }
+.side__head { padding:0 6px 0 12px; }
+.side__title { display:flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:500; color:var(--ec-fg-100); }
+.side__body { padding:4px 8px 12px; display:flex; flex-direction:column; }
+.side__search { padding:2px 4px 4px; }
+.side__field { padding:0 4px; }
+
+/* collapsible filter sections: the micro-caps label doubles as the toggle;
+   an applied filter shows as a green count pill that survives collapsing */
+.fsec { padding-bottom:4px; }
+.fsec__row { display:flex; align-items:center; gap:2px; margin-top:8px; }
+.fsec:first-child .fsec__row { margin-top:2px; }
+.fsec__head { display:flex; align-items:center; gap:5px; flex:1; min-width:0;
+  padding:4px 8px 4px 6px; border-radius:var(--ec-radius);
+  font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ec-fg-48); white-space:nowrap; text-align:left;
+  transition:background .12s,color .12s; }
+.fsec__head:hover { background:var(--ec-fg-4); color:var(--ec-fg-80); }
+.fsec__badge { display:grid; place-items:center; min-width:14px; height:14px;
+  padding:0 4px; border-radius:999px; background:var(--ec-green); color:#04150e;
+  font-style:normal; font-size:9px; font-weight:600; letter-spacing:0;
+  font-variant-numeric:tabular-nums; }
+.fsec__chev { width:12px; height:12px; flex-shrink:0;
+  color:var(--ec-fg-32); transition:transform .12s; }
+.fsec.is-closed .fsec__chev { transform:rotate(-90deg); }
+.fsec.is-closed .fsec__body { display:none; }
+.fsec__head span { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+/* an applied filter turns the group label green — the count lives up top,
+   next to Reset — and earns the group its own clear button */
+.fsec.is-active .fsec__head { color:var(--ec-green); }
+.fsec.is-active .fsec__head:hover { color:var(--ec-badge); }
+.fsec__clear { display:none; place-items:center; width:20px; height:20px;
+  flex-shrink:0; border-radius:var(--ec-radius); color:var(--ec-fg-48);
+  transition:background .12s,color .12s; }
+.fsec.is-active .fsec__clear { display:grid; }
+.fsec__clear:hover { background:var(--ec-fg-8); color:var(--ec-fg-100); }
+.fsec__clear svg { width:10px; height:10px; }
+
+/* filter rows: checkbox geometry from the Extension Store */
+.frow { display:flex; width:100%; align-items:center; gap:8px; height:26px; padding:0 8px;
+  flex-shrink:0; border-radius:var(--ec-radius); font-size:12px; color:var(--ec-fg-80);
+  text-align:left; transition:background .12s,color .12s; }
+.frow:hover { background:var(--ec-fg-4); color:var(--ec-fg-100); }
+/* a picked row keeps a green-tinted plate, not just the checkbox — the
+   applied filter must read from across the panel */
+.frow.is-on { color:var(--ec-fg-100); background:var(--ec-green-08); }
+.frow.is-on:hover { background:var(--ec-green-16); }
+.frow span { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.frow__cnt { margin-left:auto; padding-left:8px; font-style:normal; font-size:11px;
+  color:var(--ec-fg-48); font-variant-numeric:tabular-nums; text-align:right; }
+.frow.is-dim { color:var(--ec-fg-32); }
+.frow.is-dim .frow__cnt { color:var(--ec-fg-24); }
+.frow__check { width:14px; height:14px; flex-shrink:0; border-radius:3px;
+  border:1px solid var(--ec-fg-24); display:grid; place-items:center;
+  color:transparent; transition:border-color .12s,background .12s; }
+.frow__check svg { width:10px; height:10px; }
+.frow.is-on .frow__check { background:var(--ec-green); border-color:var(--ec-green); color:#04150e; }
+
+/* "Show N more" disclosure under a clipped list */
+.fmore { display:block; margin:2px 0 0; padding:2px 8px; font-size:11px;
+  color:var(--ec-fg-48); border-radius:var(--ec-radius); text-align:left;
+  transition:color .12s; }
+.fmore:hover { color:var(--ec-fg-100); }
+
+/* axes chips: small square toggles, green tint when on */
+.axchips { display:flex; gap:6px; padding:6px 0 10px; }
+.axchip { flex:1; min-width:0; height:26px; border-radius:var(--ec-radius);
+  background:var(--ec-fg-4); border:1px solid transparent; font-size:12px;
+  color:var(--ec-fg-80); transition:border-color .12s,color .12s,background .12s;
+  font-variant-numeric:tabular-nums; }
+.axchip:hover { border-color:var(--ec-fg-16); color:var(--ec-fg-100); }
+.axchip.is-on { background:var(--ec-green-08); border-color:var(--ec-green); color:var(--ec-fg-100); }
+
+/* work-area range: label row (axis + current span) above a dual-thumb track */
+.wa { margin-bottom:10px; }
+.wa:last-child { margin-bottom:2px; }
+.wa__row { display:flex; align-items:center; margin:0 4px 4px; font-size:11px; }
+.wa__axis { color:var(--ec-fg-56); font-weight:500; }
+.wa__val { margin-left:auto; color:var(--ec-fg-64); font-variant-numeric:tabular-nums; }
+.range { position:relative; height:14px; margin:0 4px; }
+.range__track { position:absolute; left:0; right:0; top:6px; height:2px;
+  border-radius:999px; background:var(--ec-fg-12); }
+.range__fill { position:absolute; top:0; height:100%; background:var(--ec-green); }
+.range input[type=range] { position:absolute; inset:0; width:100%; margin:0;
+  -webkit-appearance:none; appearance:none; background:none; pointer-events:none; }
+.range input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+  width:10px; height:10px; margin-top:2px; border-radius:999px; background:var(--ec-fg-100);
+  border:2px solid var(--ec-green); pointer-events:auto; cursor:ew-resize; }
+.range input[type=range]::-moz-range-thumb { width:6px; height:6px; border-radius:999px;
+  background:var(--ec-fg-100); border:2px solid var(--ec-green); pointer-events:auto; cursor:ew-resize; }
+
+/* units: even segments on the fg-4 track (sidebar recipe) */
+.segmented--full button.is-on { background:var(--ec-fg-12); color:var(--ec-fg-100); }
+
+/* ================================================================ CONTENT === */
+.store { flex:1; min-width:0; background:var(--ec-card); }
+.store__head { padding:0 6px 0 12px; }
+.store__title { font-size:13px; font-weight:500; color:var(--ec-fg-100);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.store__cnt { margin-left:6px; font-size:12px; color:var(--ec-fg-48); white-space:nowrap; }
+.store__head .selectish { flex-shrink:0; gap:6px; }
+.store__head .selectish svg:first-child { color:var(--ec-fg-56); }
+
+/* ---- brand plate: white circle with the maker's monogram in its brand hue.
+   The circle stays white in both themes — it is the vendor's identity plate,
+   same rule as the extension logos. ---- */
+.mlogo { display:grid; place-items:center; flex-shrink:0; border-radius:999px;
+  background:#fff; border:1px solid rgba(10,12,12,.12);
+  color:var(--bc, #16191b); font-weight:700; letter-spacing:.02em; }
+
+/* kind pill: quiet neutral tag; the catalog is mostly one kind at a time,
+   so the pill only earns a hue where the kind changes what you get (kit) */
+.ktag { display:inline-flex; align-items:center; gap:4px; height:18px; padding:0 8px;
+  flex-shrink:0; border-radius:999px; background:var(--ec-fg-8); font-size:10px;
+  font-weight:500; color:var(--ec-fg-64); white-space:nowrap; }
+.ktag svg { width:11px; height:11px; }
+
+/* price: free reads quiet-green (a fact, not a button); paid = amber pill */
+.price-free { font-size:12px; font-weight:500; color:var(--ec-fg-100); }
+.price-note { font-size:12px; color:var(--ec-fg-56); }
+.price-val { font-size:12px; font-weight:500; color:var(--ec-fg-100);
+  font-variant-numeric:tabular-nums; }
+.paidtag { display:inline-flex; align-items:center; height:18px; padding:0 7px; flex-shrink:0;
+  border-radius:999px; background:var(--ec-amber); color:#1a1405;
+  font-size:10px; font-weight:600; }
+
+/* ---- grid of product cards ---- */
+.mgrid { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr));
+  gap:8px; padding:12px; }
+.mcard { display:flex; flex-direction:column; text-align:left; overflow:hidden;
+  border:1px solid transparent; border-radius:var(--ec-radius-md); background:var(--ec-fg-4);
+  cursor:pointer; transition:background .12s,border-color .12s; }
+.mcard:hover { background:var(--ec-fg-6); border-color:var(--border); }
+
+/* photo slot: machine/control artwork on its own band; the placeholder keeps
+   the plate quiet — a big glyph in the faint ink, no fake covers */
+.mcard__photo { aspect-ratio:16/9; overflow:hidden; display:grid; place-items:center;
+  background:var(--ec-fg-4); border-bottom:1px solid var(--ec-fg-6); }
+.mcard__photo img { width:100%; height:100%; object-fit:cover; }
+.mcard__photo.is-empty svg { width:32px; height:32px; color:var(--ec-fg-16); }
+
+.mcard__head { display:flex; align-items:flex-start; gap:10px; padding:12px 12px 10px; }
+.mcard__logo { width:36px; height:36px; font-size:12px; }
+.mcard__htext { flex:1; min-width:0; padding-top:1px; }
+.mcard__name { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; font-size:14px; line-height:18px; font-weight:600; color:var(--ec-fg-100); }
+.mcard__by { display:flex; align-items:center; gap:6px; margin-top:2px; min-width:0;
+  font-size:11px; line-height:14px; color:var(--ec-fg-56); white-space:nowrap; overflow:hidden; }
+.mcard__bysep { width:1px; height:10px; flex-shrink:0; background:var(--ec-fg-16); }
+
+/* facts: label/value grid, one axis for all values (reqcard recipe) */
+/* five fact rows are reserved even when a kind shows four, so every card in
+   the grid is the same height regardless of what stands next to it */
+.mcard__kv { display:grid; grid-template-columns:88px minmax(0,1fr); gap:4px 10px;
+  align-content:start; min-height:101px;
+  padding:0 12px 10px; font-size:11px; line-height:15px; }
+.mcard__kv span { color:var(--ec-fg-48); white-space:nowrap; }
+.mcard__kv b { font-weight:400; color:var(--ec-fg-88, var(--ec-fg-80)); min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-variant-numeric:tabular-nums; }
+
+.mcard__foot { display:flex; align-items:center; gap:8px; margin:auto 12px 0;
+  padding:8px 0 10px; border-top:1px solid var(--ec-fg-6); }
+/* kind pills: one hue per category (the statetag recipe — tinted plate,
+   hue ink), so a mixed grid reads its kinds at a glance */
+.kindtag { display:inline-flex; align-items:center; height:18px; padding:0 8px;
+  flex-shrink:0; border-radius:999px; font-size:10px; font-weight:500; white-space:nowrap; }
+.kindtag--post   { background:rgba(70,172,255,.14);  color:var(--ec-blue-soft); }
+.kindtag--interp { background:rgba(149,132,235,.16); color:var(--op-violet); }
+.kindtag--schema { background:var(--ec-green-16);    color:var(--ec-badge); }
+.kindtag--kit    { background:rgba(235,193,74,.14);  color:var(--ec-amber); }
+:root[data-theme="light"] .kindtag--post { color:var(--ec-blue); }
+:root[data-theme="light"] .kindtag--kit  { color:#8a6d14; }
+.mcard__fspacer { flex:1; }
+.mcard__inst { display:inline-flex; align-items:center; gap:4px; flex-shrink:0;
+  font-size:11px; color:var(--ec-fg-56); font-variant-numeric:tabular-nums; }
+.mcard__inst svg { width:12px; height:12px; color:var(--ec-fg-48); }
+
+/* Get: pill button (the store's install recipe) */
+.mget { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 13px;
+  flex-shrink:0; border-radius:999px; background:var(--ec-fg-12); border:1px solid transparent;
+  font-size:12px; font-weight:500; color:var(--ec-fg-100); white-space:nowrap;
+  transition:background .12s,border-color .12s; }
+.mget:hover { background:var(--ec-fg-16); }
+.mget.is-on { background:var(--ec-green-08); border-color:var(--ec-green); font-weight:400; }
+.mget.is-on svg { color:var(--ec-green); }
+.mget svg { width:13px; height:13px; }
+
+/* ---- list view: a real table (the .atable recipe) — each fact in its own
+   column, numbers right-aligned in tabular figures ---- */
+.mtablewrap { padding:4px 12px 12px; }
+.mtable { width:100%; border-collapse:collapse; table-layout:fixed; }
+.mtable th { position:sticky; top:0; z-index:2; background:var(--ec-card);
+  height:28px; padding:0 10px; text-align:left; font-size:11px; font-weight:400;
+  color:var(--ec-fg-48); border-bottom:1px solid var(--divider); white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; }
+.mtable td { padding:8px 10px; font-size:12px; color:var(--ec-fg-80);
+  border-bottom:1px solid var(--divider); vertical-align:middle;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mtable tr:last-child td { border-bottom:none; }
+.mtable tbody tr { cursor:pointer; }
+.mtable tbody tr:hover { background:var(--ec-fg-4); }
+.mtable th.num, .mtable td.num { text-align:right; font-variant-numeric:tabular-nums; }
+/* identity cell: the card's photo as a small thumb + name over publisher */
+.mtable__id { display:flex; align-items:center; gap:10px; min-width:0; }
+.mtable__thumb { display:grid; place-items:center; flex-shrink:0;
+  width:60px; height:38px; overflow:hidden; border-radius:var(--ec-radius);
+  background:var(--ec-fg-4); border:1px solid var(--ec-fg-6); }
+.mtable__thumb img { width:100%; height:100%; object-fit:cover; }
+.mtable__thumb.is-empty svg { width:16px; height:16px; color:var(--ec-fg-16); }
+.mtable__idtext { min-width:0; }
+.mtable__name { display:block; font-weight:500; color:var(--ec-fg-100);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mtable__sub { display:block; margin-top:1px; font-size:11px; color:var(--ec-fg-48);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mtable td.dim { color:var(--ec-fg-56); }
+/* column plan: proportional widths, so the whole table breathes with the
+   window instead of dumping all the slack into the first column */
+.mtable .c-kind { width:11%; }
+.mtable .c-mach { width:13%; }
+.mtable .c-type { width:8%; }
+.mtable .c-ctrl { width:13%; }
+.mtable .c-ax { width:5%; }
+.mtable .c-wa { width:13%; }
+.mtable .c-dl { width:8%; }
+.mtable .c-price { width:9%; }
+@media (max-width:1280px) { .mtable .c-dl { display:none; } }
+@media (max-width:1100px) { .mtable .c-ctrl, .mtable .c-wa { display:none; } }
+
+/* load-more sentinel */
+.moremark { padding:10px; text-align:center; font-size:11px; color:var(--ec-fg-32); }
+
+/* empty state inherits .empty from styles.css */
+
+/* card grid steps down so a card never gets thinner than its facts column */
+@media (max-width:1800px) { .mgrid { grid-template-columns:repeat(5, minmax(0,1fr)); } }
+@media (max-width:1560px) { .mgrid { grid-template-columns:repeat(4, minmax(0,1fr)); } }
+@media (max-width:1280px) { .mgrid { grid-template-columns:repeat(3, minmax(0,1fr)); } }
+@media (max-width:1000px) { .mgrid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+
+@media (max-width:640px) {
+  .main { padding:8px; gap:8px; }
+  .side { display:none; }
+  .header__user span { display:none; }
+  .header .search { width:150px; }
+  .mgrid { grid-template-columns:1fr; padding:8px; }
+}

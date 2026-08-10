@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Digital Machine Center · ENCY Core</title>
+  <!-- theme bootstrap before CSS so there is no flash of the wrong theme -->
+  <script>(function () {
+    var p = localStorage.getItem('ency-theme');
+    document.documentElement.dataset.theme = p === 'light' || p === 'dark' ? p
+      : (p === 'system' && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  })();</script>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="dmc.css" />
+</head>
+<body>
+
+<!-- ===================== ICON SPRITE ===================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevdown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l4 4 12-11"/></symbol>
+  <symbol id="i-check-b" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l4 4 12-11"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><circle cx="11" cy="11" r="4.5"/><path d="M15.4 15.4l2.5 2.5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10m0 0l-4-4m4 4l4-4M5 19h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V5m0 0L8 9m4-4l4 4M5 19h14"/></symbol>
+  <symbol id="i-grid-view" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-rows" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14M8 19l-3-3M8 19l3-3M16 19V5M16 5l-3 3M16 5l3 3"/></symbol>
+  <symbol id="i-funnel" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linejoin="round"><path d="M3 3.5H13C13.2761 3.5 13.5 3.72386 13.5 4V5.58594C13.5 5.71849 13.4472 5.84572 13.3535 5.93945L9.93945 9.35352C9.65818 9.63479 9.50004 10.0163 9.5 10.4141V12.3818C9.5 12.5712 9.39299 12.7444 9.22363 12.8291L7.22363 13.8291C6.89118 13.9953 6.5 13.7535 6.5 13.3818V10.4141C6.49996 10.0163 6.34182 9.63478 6.06055 9.35352L2.64648 5.93945C2.55275 5.84572 2.50004 5.71849 2.5 5.58594V4L2.50977 3.89941C2.55629 3.67145 2.75829 3.5 3 3.5Z" fill="currentColor" fill-opacity=".06"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4H6.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H13"/><path d="M17 8l4 4-4 4M21 12H10"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-az" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5L7.5 7l3.5 9.5M5.2 13.5h4.6"/><path d="M14.5 8h5l-5 8h5"/></symbol>
+  <!-- DMC mark: a machine plate with a spindle cross -->
+  <symbol id="i-dmc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3" stroke-width="2" fill="currentColor" fill-opacity=".08"/><path d="M12 7v10M7 12h10" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.4" stroke-width="2"/></symbol>
+  <!-- product-kind glyphs -->
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 12.3l2.6 2.5 5-5.4"/></symbol>
+  <symbol id="k-post" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 8L4.5 12l4 4M15.5 8l4 4-4 4"/><path d="M13 5.5l-2.5 13"/></symbol>
+  <symbol id="k-interp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M7 9l3 3-3 3M12.5 15h4.5"/></symbol>
+  <symbol id="k-schema" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12v9M12 12L4 7.5M12 12l8-4.5"/></symbol>
+  <symbol id="k-kit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="8" height="8" rx="1" stroke-width="2" fill="currentColor" fill-opacity=".08"/><rect x="15" y="1" width="8" height="8" rx="1" stroke-width="2" fill="currentColor" fill-opacity=".08"/><rect x="1" y="15" width="8" height="8" rx="1" stroke-width="2" fill="currentColor" fill-opacity=".08"/><path d="M14 19h10M19 14v10" stroke-width="2"/></symbol>
+</svg>
+
+<div class="app">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="header">
+    <svg class="header__mark"><use href="#i-dmc"/></svg>
+    <div class="header__title">Digital Machine Center</div>
+    <span class="header__sep"></span>
+    <!-- scope: which product kind the catalog shows, before any filter -->
+    <div class="segmented" id="scopeSeg"></div>
+    <div class="search">
+      <svg><use href="#i-search"/></svg>
+      <input class="field" id="searchField" type="text" placeholder="Search machines, posts, controls" />
+    </div>
+    <button class="panel__settings" id="funnelBtn" title="Filters">
+      <svg><use href="#i-funnel"/></svg><span class="panel__badge" id="funnelCnt" hidden></span>
+    </button>
+    <div class="header__spacer"></div>
+    <button class="btn-primary" id="pubBtn"><svg><use href="#i-upload"/></svg>Publish</button>
+    <span class="header__sep"></span>
+    <button class="header__user" id="userBtn" title="Account">
+      <span class="avatar" style="--av:#84ebb8">RM</span>
+      <span>ruslan.m</span>
+      <svg class="chev"><use href="#i-chevdown"/></svg>
+    </button>
+  </header>
+
+  <div class="main">
+
+    <!-- ===================== SIDEBAR: FILTERS ===================== -->
+    <aside class="panel side" id="side">
+      <header class="panel__head side__head">
+        <div class="side__title">Filters<i class="fsec__badge" id="sideCnt" hidden></i></div>
+        <div class="panel__hspacer"></div>
+        <button class="fclear" id="resetBtn">Reset</button>
+      </header>
+      <div class="panel__body side__body">
+
+        <section class="fsec" data-sec="maker">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Machine manufacturer</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body">
+            <div class="side__search"><div class="search" style="width:100%;max-width:none">
+              <svg><use href="#i-search"/></svg>
+              <input class="field" id="mmfrSearch" type="text" placeholder="Search..." />
+            </div></div>
+            <div id="mmfrRows"></div>
+          </div>
+        </section>
+
+        <section class="fsec" data-sec="ctrl">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Control manufacturer</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div id="cmfrRows"></div></div>
+        </section>
+
+        <section class="fsec" data-sec="type">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Machine type</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div id="typeRows"></div></div>
+        </section>
+
+        <section class="fsec" data-sec="axes">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Axes</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div class="side__field"><div class="axchips" id="axChips"></div></div></div>
+        </section>
+
+        <section class="fsec" data-sec="wa">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Work area</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div class="side__field" id="waRanges"></div></div>
+        </section>
+
+        <section class="fsec" data-sec="price">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Price</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div id="priceRows"></div></div>
+        </section>
+
+        <section class="fsec" data-sec="units">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Units</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div id="unitRows"></div></div>
+        </section>
+
+        <section class="fsec" data-sec="pub">
+          <div class="fsec__row">
+            <button class="fsec__head"><svg class="fsec__chev"><use href="#i-chevdown"/></svg><span>Publisher</span></button>
+            <button class="fsec__clear" title="Clear"><svg><use href="#i-close"/></svg></button>
+          </div>
+          <div class="fsec__body"><div id="pubRows"></div></div>
+        </section>
+
+      </div>
+    </aside>
+
+    <!-- ===================== CONTENT ===================== -->
+    <section class="panel store">
+      <header class="panel__head store__head">
+        <div class="store__title" id="storeTitle">All products</div>
+        <span class="store__cnt" id="storeCnt"></span>
+        <div class="panel__hspacer"></div>
+        <div class="panel__mode" id="viewMode">
+          <button data-mode="list" title="List view"><svg><use href="#i-rows"/></svg></button>
+          <button data-mode="grid" class="is-active" title="Grid view"><svg><use href="#i-grid-view"/></svg></button>
+        </div>
+        <button class="selectish" id="sortBtn" title="Sort">
+          <svg><use href="#i-sort"/></svg><span id="sortLabel">Recent</span>
+          <svg><use href="#i-chevdown"/></svg>
+        </button>
+      </header>
+      <div class="panel__body store__body" id="storeBody"></div>
+    </section>
+
+  </div>
+</div>
+
+<!-- popovers + toast -->
+<div class="hmenu" id="sortMenu" hidden></div>
+<div class="hmenu" id="userMenu" hidden>
+  <button data-uact="theme"><svg class="th-moon"><use href="#i-moon"/></svg><svg class="th-sun" style="display:none"><use href="#i-sun"/></svg><span id="themeLabel">Dark theme</span></button>
+  <button data-uact="settings"><svg><use href="#i-user"/></svg>Account settings</button>
+  <div class="hmenu__sep"></div>
+  <button class="is-danger" data-uact="logout"><svg><use href="#i-logout"/></svg>Log out</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="dmc.js"></script>
+</body>
+</html>
