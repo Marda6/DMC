@@ -9,7 +9,7 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 4321;
 const TYPES = { '.html':'text/html', '.css':'text/css', '.js':'text/javascript',
   '.mjs':'text/javascript', '.png':'image/png', '.jpg':'image/jpeg',
-  '.svg':'image/svg+xml', '.json':'application/json', '.woff2':'font/woff2' };
+  '.svg':'image/svg+xml', '.json':'application/json', '.woff2':'font/woff2', '.webp':'image/webp' };
 
 createServer(async (req, res) => {
   try {

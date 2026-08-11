@@ -190,7 +190,8 @@
    the plate quiet — a big glyph in the faint ink, no fake covers */
 .mcard__photo { aspect-ratio:16/9; overflow:hidden; display:grid; place-items:center;
   background:var(--ec-fg-4); border-bottom:1px solid var(--ec-fg-6); }
-.mcard__photo img { width:100%; height:100%; object-fit:cover; }
+/* product renders are cut-out objects, not photography — contain, don't crop */
+.mcard__photo img { width:100%; height:100%; object-fit:contain; padding:8px; }
 .mcard__photo.is-empty svg { width:32px; height:32px; color:var(--ec-fg-16); }
 /* previews off: the toggle next to the view switch hides the photo band on
    cards and the thumb column in the table */
@@ -216,15 +217,24 @@
 .mcard__bysep { width:1px; height:10px; flex-shrink:0; background:var(--ec-fg-16); }
 
 /* facts: label/value grid, one axis for all values (reqcard recipe) */
-/* five fact rows are reserved even when a kind shows four, so every card in
+/* six fact rows are reserved even when a kind shows fewer, so every card in
    the grid is the same height regardless of what stands next to it */
 .mcard__kv { display:grid; grid-template-columns:88px minmax(0,1fr); gap:4px 10px;
-  align-content:start; min-height:101px;
+  align-content:start; min-height:120px;
   padding:0 12px 10px; font-size:11px; line-height:15px; }
 .mcard__kv span { color:var(--ec-fg-48); white-space:nowrap; }
 .mcard__kv b { font-weight:400; color:var(--ec-fg-88, var(--ec-fg-80)); min-width:0;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   font-variant-numeric:tabular-nums; }
+
+/* optional equipment: compact tag pills inside the Options fact row —
+   first two + a "+N" counter */
+.xtag { display:inline-flex; align-items:center; height:16px; padding:0 7px;
+  flex-shrink:0; border-radius:999px; background:var(--ec-fg-8); font-size:10px;
+  color:var(--ec-fg-72); white-space:nowrap; }
+.xtag--more { color:var(--ec-fg-48); }
+/* the options cell clips hard — the "+N" pill is the overflow signal */
+.kv-opts { display:flex; gap:4px; min-width:0; overflow:hidden; }
 
 .mcard__foot { display:flex; align-items:center; gap:8px; margin:auto 12px 0;
   padding:8px 0 10px; border-top:1px solid var(--ec-fg-6); }
@@ -276,7 +286,7 @@
 .mtable__thumb { display:grid; place-items:center; flex-shrink:0;
   width:60px; height:38px; overflow:hidden; border-radius:var(--ec-radius);
   background:var(--ec-fg-4); border:1px solid var(--ec-fg-6); }
-.mtable__thumb img { width:100%; height:100%; object-fit:cover; }
+.mtable__thumb img { width:100%; height:100%; object-fit:contain; padding:2px; }
 .mtable__thumb.is-empty svg { width:16px; height:16px; color:var(--ec-fg-16); }
 .mtable__idtext { min-width:0; }
 .mtable__name { display:block; font-weight:500; color:var(--ec-fg-100);

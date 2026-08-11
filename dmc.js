@@ -68,6 +68,10 @@ const SERIES = { 'DMG MORI':['CLX','NLX','NTX','NMV','DMU','CMX','ecoTurn','mono
   Spinner:['TC','VC'], Abamet:['AM'], Accuway:['UM'], 'Akira Seiki':['SV','SR'],
   Awea:['BM','LP'], Baofeng:['BF'], Chevalier:['FVM','QP'], Emco:['Hyperturn','Maxxturn'],
   Feeler:['FV','FT'] };
+/* optional equipment a physical machine can carry (schemas and kits) */
+const OPTIONS = ['4th axis','5th axis','Probe','Tool setter','Sub-spindle','Live tooling',
+  'Bar feeder','Tailstock','Steady rest','Pallet changer','Chip conveyor','Through coolant',
+  'Y axis','Tool magazine 40'];
 const PUBLISHERS = ['ENCY Software Ltd','Postworks GmbH','CAM Guild','MillwrightSoft'];
 const PUB_W = [.82, .08, .06, .04];
 const wpick = (arr, w) => { let x = rnd(), i = 0;
@@ -116,6 +120,22 @@ for (let i = 0; i < 2; i++) { const p = product('kit');
 DATA.forEach(p => {
   if (p.kind === 'post') p.name = p.control + ' ' + p.name;
   if (p.kind === 'post' || p.kind === 'interp') p.wa = null;
+});
+/* optional equipment: 0–5 picks per machine-bearing product */
+DATA.forEach(p => {
+  if (p.kind !== 'schema' && p.kind !== 'kit') { p.opts = []; return; }
+  const n = wpick([0,1,2,3,4,5], [.18,.2,.22,.18,.12,.1]);
+  const pool = [...OPTIONS]; p.opts = [];
+  for (let i = 0; i < n; i++) p.opts.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+});
+
+/* sample machine shots: two example renders spread over the schemas/kits
+   (every other schema keeps the placeholder so both states stay visible) */
+const SHOTS = ['assets/shots/machine-1.webp', 'assets/shots/machine-2.webp'];
+DATA.forEach((p, i) => {
+  if (p.kind === 'schema' || p.kind === 'kit') {
+    if (i % 3 !== 0) p.photo = SHOTS[i % SHOTS.length];
+  }
 });
 
 /* ---------------------------------------------------------------- state --- */
@@ -178,7 +198,13 @@ function cardHtml(p) {
   else { kv.push(['Control', esc(p.ctrlModel)]);
     kv.push(['Machine', esc(p.maker + ' ' + p.model)]); }
   kv.push(['Type', esc(p.type)], ['Axes', p.axes >= 6 ? '6+' : p.axes]);
-  if (p.kind === 'schema' || p.kind === 'kit') kv.push([waLabel(p), waText(p)]);
+  if (p.kind === 'schema' || p.kind === 'kit') {
+    kv.push([waLabel(p), waText(p)]);
+    kv.push(['Equipment', p.opts.length
+      ? `<span class="kv-opts">${p.opts.map(o => `<span class="xtag">${esc(o)}</span>`).join('')
+        }<span class="xtag xtag--more" hidden></span></span>`
+      : '—']);
+  }
   /* photo slot: real machine/control shots later; the placeholder is a quiet
      plate with the product-kind glyph so cards keep their height today */
   const KGLYPH = { post:'k-post', interp:'k-interp', schema:'k-schema', kit:'k-kit' };
@@ -228,6 +254,21 @@ const TABLE_HEAD = `<thead><tr>
   <th class="c-wa num">Work area</th><th class="c-dl num">Downloads</th>
   <th class="c-price num">Price</th></tr></thead>`;
 
+/* trim the Options row to what actually fits: drop trailing tags and grow
+   the "+N" counter instead of ever showing an ellipsis */
+function fitOpts(card) {
+  const cell = $('.kv-opts', card); if (!cell) return;
+  const more = $('.xtag--more', cell);
+  let hidden = 0;
+  const overflows = () => cell.scrollWidth > cell.clientWidth + 1;
+  while (overflows()) {
+    const tags = cell.querySelectorAll('.xtag:not(.xtag--more)');
+    if (tags.length <= 1) break;
+    tags[tags.length - 1].remove(); hidden++;
+    more.hidden = false; more.textContent = '+' + hidden;
+  }
+}
+
 const CHUNK = 60;
 let current = [];
 function renderCatalog(reset) {
@@ -249,6 +290,7 @@ function renderCatalog(reset) {
     const p = current[i];
     const n = S.view === 'grid' ? el('button', 'mcard', cardHtml(p)) : el('tr', '', rowHtml(p));
     n.dataset.id = p.id; slot.appendChild(n);
+    if (S.view === 'grid') fitOpts(n);
   }
   S.shown = end;
   let mark = $('.moremark', body);
