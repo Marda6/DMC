@@ -410,6 +410,19 @@ $('#viewMode').addEventListener('click', e => {
 });
 $('#pubBtn').onclick = () => toast('Publishing flow — next iteration');
 
+/* preview toggle: hides the photo band / table thumbs, remembered locally */
+function syncPreview() {
+  const on = localStorage.getItem('dmc-preview') !== 'off';
+  $('.app').classList.toggle('no-preview', !on);
+  $('#prevBtn').classList.toggle('is-on', on);
+}
+$('#prevBtn').onclick = () => {
+  const on = localStorage.getItem('dmc-preview') !== 'off';
+  localStorage.setItem('dmc-preview', on ? 'off' : 'on');
+  syncPreview();
+};
+syncPreview();
+
 /* sort + user popovers */
 function menu(host, anchor, items, onPick) {
   host.innerHTML = '';

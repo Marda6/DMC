@@ -192,6 +192,10 @@
   background:var(--ec-fg-4); border-bottom:1px solid var(--ec-fg-6); }
 .mcard__photo img { width:100%; height:100%; object-fit:cover; }
 .mcard__photo.is-empty svg { width:32px; height:32px; color:var(--ec-fg-16); }
+/* previews off: the toggle next to the view switch hides the photo band on
+   cards and the thumb column in the table */
+.app.no-preview .mcard__photo { display:none; }
+.app.no-preview .mtable__thumb { display:none; }
 
 .mcard__head { display:flex; align-items:flex-start; gap:10px; padding:12px 12px 10px; }
 .mcard__logo { width:36px; height:36px; font-size:12px; }
