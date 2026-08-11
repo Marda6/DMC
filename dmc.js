@@ -187,11 +187,12 @@ function cardHtml(p) {
       : `<svg><use href="#${KGLYPH[p.kind]}"/></svg>`}
     </div>
     <div class="mcard__head">
+    <span class="klogo klogo--${p.kind}">${KINDS[p.kind][0]}</span>
     <div class="mcard__htext">
       <div class="mcard__name">${esc(p.name)}</div>
     </div></div>
     <div class="mcard__kv">${kv.map(([k,v]) => `<span>${k}</span><b>${v}</b>`).join('')}</div>
-    <div class="mcard__foot"><span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span>
+    <div class="mcard__foot"><span class="mcard__kind">${KINDS[p.kind]}</span>
       <span class="mcard__fspacer"></span>${priceHtml(p)}</div>`;
 }
 /* table row: one fact per column, so the list scans vertically */

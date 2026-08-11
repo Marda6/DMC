@@ -199,6 +199,15 @@
 
 .mcard__head { display:flex; align-items:flex-start; gap:10px; padding:12px 12px 10px; }
 .mcard__logo { width:36px; height:36px; font-size:12px; }
+/* category plate: a circle with the kind's initial, in the kind's hue */
+.klogo { display:grid; place-items:center; width:32px; height:32px; flex-shrink:0;
+  border-radius:999px; font-size:13px; font-weight:700; }
+.klogo--post   { background:rgba(70,172,255,.14);  color:var(--ec-blue-soft); }
+.klogo--interp { background:rgba(149,132,235,.16); color:var(--op-violet); }
+.klogo--schema { background:var(--ec-green-16);    color:var(--ec-badge); }
+.klogo--kit    { background:rgba(235,193,74,.14);  color:var(--ec-amber); }
+:root[data-theme="light"] .klogo--post { color:var(--ec-blue); }
+:root[data-theme="light"] .klogo--kit  { color:#8a6d14; }
 .mcard__htext { flex:1; min-width:0; padding-top:1px; }
 .mcard__name { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden; font-size:14px; line-height:18px; font-weight:600; color:var(--ec-fg-100); }
@@ -219,6 +228,9 @@
 
 .mcard__foot { display:flex; align-items:center; gap:8px; margin:auto 12px 0;
   padding:8px 0 10px; border-top:1px solid var(--ec-fg-6); }
+/* card footer kind: plain quiet text — the hue already lives on the circle */
+.mcard__kind { font-size:11px; color:var(--ec-fg-56); white-space:nowrap; }
+
 /* kind pills: one hue per category (the statetag recipe — tinted plate,
    hue ink), so a mixed grid reads its kinds at a glance */
 .kindtag { display:inline-flex; align-items:center; height:18px; padding:0 8px;
