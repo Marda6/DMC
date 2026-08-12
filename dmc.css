@@ -4,6 +4,14 @@
    Extension Store anatomy: filters panel + catalog panel on one plate tone.
    ========================================================================= */
 
+/* primary button ink per theme, green plate stays: dark ink reads crisp on
+   the dark UI, but against a light page it muddies — there the green plate
+   takes white ink (both inks already exist in the system) */
+:root[data-theme="light"] .btn-primary { color:#fff; }
+:root[data-theme="light"] .fsec__badge,
+:root[data-theme="light"] .panel__badge { color:#fff; }
+:root[data-theme="light"] .frow.is-on .frow__check { color:#fff; }
+
 /* header: user chip on the right (as in the Extension Store) */
 .header__user { display:flex; align-items:center; gap:8px; height:32px; padding:0 8px 0 4px;
   border-radius:var(--ec-radius); transition:background .12s; }
@@ -24,22 +32,24 @@
 
 /* scope switch on the rail needs the heavier track; picked = solid plate */
 .header .segmented { flex-shrink:0; background:var(--ec-fg-12); }
+/* the light rail is bright already — one step lighter keeps the track visible
+   without reading as a dark slab */
+:root[data-theme="light"] .header .segmented { background:var(--ec-fg-8); }
 .header .segmented button { height:24px; padding:0 12px; font-size:12px; }
 .header .segmented button.is-on { background:var(--ec-fg-100); color:var(--ec-bg); }
 .header .segmented button.is-on .seg__n { color:inherit; opacity:.4; }
-/* a picked kind wears its category hue (the kindtag palette); All stays the
-   neutral solid plate */
+/* dark theme: a picked kind wears its hue as a tint (plate + hue ink) */
 .header .segmented button.is-on.seg--post   { background:rgba(70,172,255,.18);  color:var(--ec-blue-soft); }
 .header .segmented button.is-on.seg--interp { background:rgba(149,132,235,.2);  color:var(--op-violet); }
 .header .segmented button.is-on.seg--schema { background:var(--ec-green-16);    color:var(--ec-badge); }
 .header .segmented button.is-on.seg--kit    { background:rgba(235,193,74,.18);  color:var(--ec-amber); }
+/* light theme: inverted — SOLID hue plate, ink picked by contrast (white on
+   blue/violet/green, near-black on the one light hue, amber) */
+:root[data-theme="light"] .header .segmented button.is-on.seg--post   { background:var(--ec-blue); color:#fff; }
+:root[data-theme="light"] .header .segmented button.is-on.seg--interp { background:#6a4fd6; color:#fff; }
+:root[data-theme="light"] .header .segmented button.is-on.seg--schema { background:var(--ec-green); color:#fff; }
+:root[data-theme="light"] .header .segmented button.is-on.seg--kit    { background:var(--ec-amber); color:#1a1405; }
 .header .segmented button.is-on[class*="seg--"] .seg__n { opacity:.55; }
-/* light theme: darker inks AND denser plates — the dark-theme alphas
-   dissolve into the light track */
-:root[data-theme="light"] .header .segmented button.is-on.seg--post   { color:var(--ec-blue); background:rgba(18,105,217,.16); }
-:root[data-theme="light"] .header .segmented button.is-on.seg--interp { color:#6a4fd6; background:rgba(106,79,214,.18); }
-:root[data-theme="light"] .header .segmented button.is-on.seg--schema { color:#007a52; background:rgba(0,122,82,.16); }
-:root[data-theme="light"] .header .segmented button.is-on.seg--kit    { color:#7a5d0e; background:rgba(196,150,28,.3); }
 .seg__n { margin-left:5px; font-style:normal; color:var(--ec-fg-48);
   font-variant-numeric:tabular-nums; }
 
