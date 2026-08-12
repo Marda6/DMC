@@ -213,12 +213,11 @@ function cardHtml(p) {
       : `<svg><use href="#${KGLYPH[p.kind]}"/></svg>`}
     </div>
     <div class="mcard__head">
-    <span class="klogo klogo--${p.kind}">${KINDS[p.kind][0]}</span>
     <div class="mcard__htext">
       <div class="mcard__name">${esc(p.name)}</div>
     </div></div>
     <div class="mcard__kv">${kv.map(([k,v]) => `<span>${k}</span><b>${v}</b>`).join('')}</div>
-    <div class="mcard__foot"><span class="mcard__kind">${KINDS[p.kind]}</span>
+    <div class="mcard__foot"><span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span>
       <span class="mcard__fspacer"></span>${priceHtml(p)}</div>`;
 }
 /* table row: one fact per column, so the list scans vertically */
@@ -310,8 +309,126 @@ $('#storeBody').addEventListener('scroll', e => {
     renderCatalog(false);
 });
 $('#storeBody').addEventListener('click', e => {
-  if (e.target.closest('[data-id]')) toast('Product page — next iteration');
+  const n = e.target.closest('[data-id]');
+  if (n) openDetail(DATA.find(x => x.id == n.dataset.id));
 });
+
+/* ------------------------------------------------------- product view ---- */
+const KGLYPH = { post:'k-post', interp:'k-interp', schema:'k-schema', kit:'k-kit' };
+const ABOUT = {
+  post: p => [`${p.name} is a production post processor for ${p.ctrlModel} controls, tuned for the ${p.maker} ${p.model} (${p.type.toLowerCase()}, ${p.axes >= 6 ? '6+' : p.axes} axes). It maps every toolpath ENCY produces to controller-native cycles, keeps canned drilling and threading cycles intact, and emits arc, helix and TCP moves without linearization where the control allows it.`,
+    `The post ships with a machine-limits model — travels, spindle and feed caps, tool-change clearances — so the output is checked against the physical envelope before a single line of G-code leaves ENCY. Program headers, tool tables and operator comments follow the shop-floor conventions used by ${p.publisher}.`],
+  interp: p => [`${p.name} interpreter parses ${p.control} programs back into toolpath ENCY can display and verify. It resolves modal state, subprograms, cutter compensation and cycle expansion, so legacy programs can be simulated against the machine schema before they ever reach the shop floor.`],
+  schema: p => [`A complete digital twin of the ${p.name}: kinematics, travels, spindle and turret geometry, fixtures and the ${p.control} control panel layout. Drop it into ENCY to run collision-checked simulation and time estimation against the real machine envelope.`,
+    `The schema is measured from vendor documentation and verified on the machine. Work area, axis limits and tool-change positions match the ${p.series} series datasheet.`],
+  kit: p => [`Everything the ${p.maker} ${p.model} needs to go live in ENCY: the machine schema, a matched post processor for the ${p.ctrlModel}, and the control's interpreter — installed together and verified as one set.`],
+};
+const fmtDate = d => String(d.getDate()).padStart(2, '0') + '/'
+  + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+const fsec = (title, pairs) => `<section class="dsec"><div class="dsec__h">${title}</div>
+  <div class="dsec__grid">${pairs.map(([k, v]) =>
+    `<div><div class="dfact__k">${k}</div><div class="dfact__v">${v == null || v === '' ? '—' : v}</div></div>`).join('')}
+  </div></section>`;
+
+function openDetail(p) {
+  const win = $('#detailWin');
+  $('#dCap').textContent = `dmc / ${KINDS[p.kind].toLowerCase()} / ${p.name.toLowerCase().replace(/\s+/g, '-')}`;
+  const machine = p.kind === 'schema' || p.kind === 'kit';
+  const priceText = p.price === 'Free' ? 'Free'
+    : p.price === 'Maintenance' ? 'Included in maintenance' : '$' + fmt(p.priceVal);
+  /* controller series/model split out of the control-model string */
+  const cmodel = p.ctrlModel.replace(p.control + ' ', '');
+  const cseries = cmodel.split(/[- ]/)[0];
+  const updated = new Date(); updated.setDate(updated.getDate() - p.ts);
+  const published = new Date(updated); published.setDate(published.getDate() - 90 - p.dl % 300);
+  const waFull = p.wa ? ['X ' + p.wa.x, p.wa.y != null ? 'Y ' + p.wa.y : null, 'Z ' + p.wa.z]
+    .filter(Boolean).join(' × ') + ' mm' : '—';
+  /* posts for the same control family, closest type first */
+  const recs = DATA.filter(x => x.kind === 'post' && x.id !== p.id && x.control === p.control)
+    .sort((a, b) => (b.type === p.type) - (a.type === p.type) || b.dl - a.dl)
+    .slice(0, 3);
+
+  const samples = `
+    ${p.kind !== 'schema' ? `<div class="dsamples"><div class="dsect__h">Samples</div>
+      <div class="dsamples__row">
+        <span class="dsample"><svg><use href="#k-interp"/></svg><span><b>G&amp;M Codes</b><i>Coming soon</i></span></span>
+        ${p.kind !== 'interp' ? '<span class="dsample"><svg><use href="#k-post"/></svg><span><b>NC File</b><i>Coming soon</i></span></span>' : ''}
+      </div></div>` : ''}`;
+
+  $('#detailBody').innerHTML = `
+    <div class="dhero"><div class="dhero__text">
+      <div class="dhero__name">${esc(p.name)}
+        <span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span></div>
+      <div class="dhero__meta">
+        <span>${esc(p.publisher)}</span><span class="dhero__sep"></span>
+        <span class="dhero__dl"><svg><use href="#i-download"/></svg>${fmt(p.dl)} downloads</span>
+        <span class="dhero__sep"></span><span>Updated ${fmtDate(updated)}</span>
+      </div>
+    </div></div>
+    <div class="dbody">
+      <div class="dmain">
+        <div class="dgal__stage${p.photo ? '' : ' is-empty'}">${p.photo
+          ? `<img src="${p.photo}" alt="">` : `<svg><use href="#${KGLYPH[p.kind]}"/></svg>`}</div>
+        <div class="dblock"><div class="dblock__h">About</div>
+          ${ABOUT[p.kind](p).map(t => `<p>${t}</p>`).join('')}</div>
+        ${recs.length ? `<div class="drecs"><div class="dblock__h">Recommended post processors</div>
+          ${recs.map(r => `<button class="drec" data-rec="${r.id}">
+            <span class="klogo klogo--post">P</span>
+            <span class="drec__text"><span class="drec__name">${esc(r.name)}</span>
+              <span class="drec__sub">${esc(r.maker + ' ' + r.model)} · ${esc(r.type)}</span></span>
+            <span class="drec__price">${priceHtml(r)}</span>
+          </button>`).join('')}</div>` : ''}
+        ${samples}
+      </div>
+      <aside class="dside">
+        <div class="dact">
+          <button class="btn-primary" id="dGet"><svg><use href="#i-download"/></svg>${
+            p.got ? 'Added' : p.price === 'Paid' ? 'Buy · $' + fmt(p.priceVal) : 'Get'}</button>
+          ${p.kind === 'kit' ? '' : `<button class="btn-secondary dside__req" data-req>${
+            p.kind === 'schema' ? 'Request a post processor' : 'Request a machine schema'}</button>`}
+        </div>
+        <div class="dprice"><span class="dprice__k">Price</span>
+          <span class="dprice__v${p.price === 'Maintenance' ? ' is-note' : ''}">${priceText}</span></div>
+        ${fsec('Machine', [
+          ['Manufacturer', esc(p.maker)], ['Machine type', esc(p.type)],
+          ['Series', p.kind === 'interp' ? '—' : esc(p.series)],
+          ['Model', p.kind === 'interp' ? '—' : esc(p.model)],
+          ['Number of axes', p.axes >= 6 ? '6+' : p.axes],
+          ...(machine ? [['Work area (X×Y×Z)', waFull]] : []),
+          ...(machine && p.opts.length ? [['Equipment',
+            p.opts.map(o => `<span class="xtag">${esc(o)}</span>`).join(' ')]] : []),
+        ])}
+        ${fsec('Controller', [
+          ['Manufacturer', esc(p.control)], ['Series', esc(cseries)],
+          ['Model', esc(cmodel)], ['Units', p.units],
+        ])}
+        ${fsec('Details', [
+          ['ENCY ver', ['1','2','3'].slice(0, 1 + p.id % 3).join(', ')],
+          ['Experience', 'Not tested'],
+          ['Tested in ENCY', 'Not tested'],
+        ])}
+        ${fsec('Publisher', [
+          ['Author', '—'], ['Company', esc(p.publisher)],
+          ['Status', 'Published'], ['Downloads', fmt(p.dl)],
+          ['Published', fmtDate(published)], ['Updated', fmtDate(updated)],
+        ])}
+      </aside>
+    </div>`;
+
+  $('#dGet').onclick = () => { p.got = !p.got;
+    $('#dGet').innerHTML = `<svg><use href="#i-download"/></svg>${
+      p.got ? 'Added' : p.price === 'Paid' ? 'Buy · $' + fmt(p.priceVal) : 'Get'}`;
+    toast(p.got ? `${p.name} added to your workspace` : `${p.name} removed`); };
+  const req = $('#detailBody [data-req]');
+  if (req) req.onclick = () => toast('Request sent to the publisher');
+  $('#detailBody').querySelectorAll('[data-rec]').forEach(b =>
+    b.addEventListener('click', () => openDetail(DATA.find(x => x.id == b.dataset.rec))));
+  win.hidden = false;
+}
+$('#dClose').onclick = () => { $('#detailWin').hidden = true; };
+$('#detailWin').addEventListener('click', e => { if (e.target === $('#detailWin')) $('#detailWin').hidden = true; });
+$('#dCopy').onclick = () => toast('Link copied');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#detailWin').hidden = true; });
 
 /* ------------------------------------------------------------- sidebar ---- */
 function counts(field, skip) {

@@ -39,6 +39,7 @@
   <symbol id="i-dmc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3" stroke-width="2" fill="currentColor" fill-opacity=".08"/><path d="M12 7v10M7 12h10" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3.4" stroke-width="2"/></symbol>
   <!-- product-kind glyphs -->
   <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 12.3l2.6 2.5 5-5.4"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 11L11 17.5a3.5 3.5 0 0 1-5-5l7-7a2.5 2.5 0 0 1 3.5 3.5l-7 7a1.5 1.5 0 0 1-2-2L14 8"/></symbol>
   <symbol id="i-img" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 17.5l4.5-4.5 3 3 3.5-3.5 4 4"/></symbol>
   <symbol id="k-post" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 8L4.5 12l4 4M15.5 8l4 4-4 4"/><path d="M13 5.5l-2.5 13"/></symbol>
   <symbol id="k-interp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M7 9l3 3-3 3M12.5 15h4.5"/></symbol>
@@ -176,6 +177,19 @@
       <div class="panel__body store__body" id="storeBody"></div>
     </section>
 
+  </div>
+</div>
+
+<!-- ===================== PRODUCT VIEW ===================== -->
+<!-- opens over the catalog, so the list keeps its scroll position -->
+<div class="dwin" id="detailWin" hidden>
+  <div class="dwin__box">
+    <header class="dwin__head">
+      <span class="dwin__cap" id="dCap"></span>
+      <button class="dwin__btn" id="dCopy" title="Copy link"><svg><use href="#i-clip"/></svg></button>
+      <button class="dwin__btn" id="dClose" title="Close"><svg><use href="#i-close"/></svg></button>
+    </header>
+    <div class="dwin__scroll" id="detailBody"></div>
   </div>
 </div>
 
