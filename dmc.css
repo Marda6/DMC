@@ -406,7 +406,7 @@
 .dbody { display:flex; align-items:flex-start; gap:20px; padding:0 20px 20px; }
 .dmain { flex:1; min-width:0; }
 /* price + facts stay put while the description scrolls past */
-.dside { flex:0 0 260px; display:flex; flex-direction:column; gap:16px;
+.dside { flex:0 0 260px; display:flex; flex-direction:column; gap:8px;
   position:sticky; top:16px; align-self:flex-start; }
 
 /* gallery: one stage; renders are contained, never cropped */
@@ -432,7 +432,7 @@
 .dsect__h { margin:0 0 6px 2px; font-size:12px; line-height:16px; font-weight:600;
   color:var(--ec-fg-100); }
 /* price gets its own plate at the top of Details, so it reads first */
-.dprice { display:flex; align-items:center; gap:8px; margin-bottom:6px; padding:10px 12px;
+.dprice { display:flex; align-items:center; gap:8px; padding:10px 12px;
   border-radius:var(--ec-radius-md); background:var(--ec-fg-4); }
 .dprice__k { font-size:11px; color:var(--ec-fg-56); }
 .dprice__v { margin-left:auto; font-size:16px; line-height:20px; font-weight:600;
