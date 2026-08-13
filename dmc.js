@@ -141,6 +141,7 @@ DATA.forEach((p, i) => {
 
 /* ---------------------------------------------------------------- state --- */
 const S = {
+  page: 'catalog', acctSec: 'profile', sideHidden: false,
   scope: 'all', q: '', sort: 'recent', view: 'grid', favOnly: false,
   makers: new Set(), controls: new Set(), types: new Set(), axes: new Set(),
   pubs: new Set(), units: new Set(), prices: new Set(),
@@ -309,7 +310,8 @@ function renderCatalog(reset) {
 }
 $('#storeBody').addEventListener('scroll', e => {
   const b = e.target;
-  if (S.shown < current.length && b.scrollTop + b.clientHeight > b.scrollHeight - 600)
+  if (S.page === 'catalog' && S.shown < current.length
+    && b.scrollTop + b.clientHeight > b.scrollHeight - 600)
     renderCatalog(false);
 });
 $('#storeBody').addEventListener('click', e => {
@@ -590,8 +592,12 @@ $('#resetBtn').onclick = () => {
   S.wa = { x: [...WA_BOUNDS.x], y: [...WA_BOUNDS.y], z: [...WA_BOUNDS.z] };
   S.makerQ = ''; $('#mmfrSearch').value = ''; update();
 };
-$('#funnelBtn').onclick = () => { const side = $('#side');
-  side.hidden = !side.hidden; $('#funnelBtn').classList.toggle('is-on', side.hidden); };
+/* pressed = the panel is SHOWN, matching the view-mode buttons */
+$('#funnelBtn').onclick = () => {
+  S.sideHidden = !S.sideHidden;
+  $('#side').hidden = S.sideHidden || S.page === 'account';
+  $('#funnelBtn').classList.toggle('is-on', !S.sideHidden);
+};
 $('#viewMode').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   S.view = b.dataset.mode;
@@ -643,6 +649,7 @@ $('#userBtn').onclick = e => { e.stopPropagation();
 $('#userMenu').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   $('#userMenu').hidden = true;
+  if (b.dataset.uact === 'account') { openAccount('profile'); return; }
   if (b.dataset.uact === 'theme') {
     const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
     document.documentElement.dataset.theme = next;
@@ -666,7 +673,340 @@ function toast(msg) { const t = $('#toast');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('is-shown'), 2400); }
 
+/* ------------------------------------------------------------ account ----- */
+const ME = { user: 'ruslan.m', name: 'Ruslan Mardanshin', email: 'ruslan.m@encycam.io',
+  company: 'ENCY Software Ltd', since: '14/03/2024' };
+const ACCT_SECS = [
+  ['profile', 'Profile', 'i-user'],
+  ['dashboard', 'Dashboard', 'i-dash'],
+  ['licenses', 'My licenses', 'i-check-circle'],
+  ['published', 'My published', 'i-upload'],
+  ['import', 'Bulk import', 'i-box'],
+  ['admin', 'Admin', 'i-shield'],
+];
+function openAccount(sec) { S.page = 'account'; S.acctSec = sec || 'profile'; update(); }
+function closeAccount() { S.page = 'catalog'; update(); }
+$('#backBtn').onclick = closeAccount;
+
+function acctTable(rows, cols, empty) {
+  if (!rows.length) return `<div class="empty" style="padding:32px 16px">
+    <svg><use href="#i-search"/></svg><b>${empty}</b></div>`;
+  return `<div class="acard acard--flush"><table class="mtable mtable--acct">
+    <thead><tr>${cols.map(c => `<th class="${c[2] || ''}">${c[0]}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(p => `<tr data-id="${p.id}">${cols.map(c =>
+      `<td class="${c[2] || ''}">${c[1](p)}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+}
+const acctId = p => `<div class="mtable__id">
+  <div class="mtable__idtext"><span class="mtable__name">${esc(p.name)}</span>
+    <span class="mtable__sub">${esc(p.maker)} · ${esc(p.type)}</span></div></div>`;
+const acctDate = p => { const d = new Date(); d.setDate(d.getDate() - p.ts); return fmtDate(d); };
+
+/* mock license/publishing facts derived from the product record */
+const licNo = p => 463000 + p.id;
+const licType = p => p.price === 'Paid' ? 'Full' : 'Trial';
+const licUntil = p => { const d = new Date();
+  d.setDate(d.getDate() - p.ts + (licType(p) === 'Full' ? 365 : 30)); return d; };
+const daysLeft = d => Math.max(0, Math.ceil((d - new Date()) / 86400000));
+const PUB_STATUS = p => ['ok:Published', 'wait:Pending review', 'draft:Draft'][p.id % 3].split(':');
+/* stacked bar list: each row splits into colored segments with a legend below */
+const SEG = {
+  pub: [['ok', 'Published', 'var(--ec-green)'], ['wait', 'Pending review', 'var(--ec-amber)'],
+    ['draft', 'Draft', 'var(--ec-fg-32)']],
+  kind: [['schema', 'Machine Schema', 'var(--ec-green)'], ['post', 'Post Processor', 'var(--ec-blue)'],
+    ['interp', 'Interpreter', 'var(--op-violet)'], ['kit', 'Kit', 'var(--ec-amber)']],
+  lic: [['active', 'Active', 'var(--ec-green)'], ['trial', 'Trial', 'var(--ec-blue)'],
+    ['expiring', 'Expiring', 'var(--ec-amber)'], ['expired', 'Expired', 'var(--op-coral)']],
+};
+/* dashboard card state: active tab, Top N and range per card, publisher filter */
+const DASH = { tabA: 'type', tabL: 'type', topA: 10, topU: 10, topL: 10,
+  rangeA: 'all', rangeU: 'all', rangeL: 'all', maker: 'all' };
+const RANGE_L = { all: 'All time', 90: 'Last 90 days', 30: 'Last 30 days' };
+const dchip = (label, val, key) => `<button class="dchip" data-dmenu="${key}">
+  ${label}: <b>${esc(String(val))}</b><svg><use href="#i-chevdown"/></svg></button>`;
+const dtabs = (key, tabs) => `<div class="dtabs">${tabs.map(([v, l]) =>
+  `<button class="dtab${DASH[key] === v ? ' is-on' : ''}" data-dtab="${key}:${v}">${l}</button>`).join('')}</div>`;
+function barCard(title, note, rows, segs, opts = {}) {
+  const total = r => segs.reduce((a, [k]) => a + (r[2][k] || 0), 0);
+  const max = Math.max(...rows.map(total), 1);
+  const used = new Set();
+  const body = rows.map(([label, sub, by]) => {
+    const fill = segs.filter(([k]) => by[k]).map(([k, l, c]) => { used.add(k);
+      return `<span class="bar__seg" data-tip="${esc(l)}: ${fmt(by[k])}"
+        style="width:${by[k] / max * 100}%;background:${c}"></span>`; }).join('');
+    return `<div class="bar">
+      <span class="bar__label">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+      <span class="bar__track">${fill}</span>
+      <span class="bar__n">${fmt(total([label, sub, by]))}</span></div>`;
+  }).join('');
+  const legend = segs.filter(([k]) => used.has(k)).map(([, l, c]) =>
+    `<span class="legend__item"><i style="background:${c}"></i>${l}</span>`).join('');
+  const empty = `<div class="empty" style="padding:24px 8px">
+    <svg><use href="#i-search"/></svg><b>Nothing in this range</b></div>`;
+  return `<div class="acard acard--chart"><div class="acard__head">
+      <span class="acard__title">${title}</span><span class="panel__hspacer"></span>
+      <span class="acct__caption">${note}</span>
+      ${opts.chips || ''}${opts.top ? dchip('Top', DASH[opts.top], opts.top) : ''}</div>
+    ${opts.ctl || ''}
+    ${rows.length ? `<div class="bars${opts.dense ? ' bars--dense' : ''}">${body}</div>
+      <div class="acard__legend">${legend}</div>` : empty}</div>`;
+}
+/* one floating tooltip for all bar segments */
+const barTip = el('div', 'bartip'); barTip.hidden = true;
+document.body.appendChild(barTip);
+document.addEventListener('mouseover', e => {
+  const s = e.target.closest?.('[data-tip]');
+  if (!s) { barTip.hidden = true; return; }
+  barTip.textContent = s.dataset.tip; barTip.hidden = false;
+  const r = s.getBoundingClientRect();
+  barTip.style.left = Math.max(8 + barTip.offsetWidth / 2,
+    Math.min(r.left + r.width / 2, innerWidth - barTip.offsetWidth / 2 - 8)) + 'px';
+  barTip.style.top = (r.bottom + 6) + 'px';
+});
+
+function renderAccount() {
+  const body = $('#storeBody');
+  $('#storeTitle').textContent = 'Account';
+  $('#storeCnt').textContent = '';
+  let inner = '';
+  if (S.acctSec === 'profile') {
+    inner = `<div class="acct__h1">Profile</div>
+      <div class="acard">
+        <div class="acct__factgrid">
+          <div><div class="fact__label">Full name</div><div class="fact__value">${ME.name}</div></div>
+          <div><div class="fact__label">Username</div><div class="fact__value">${ME.user}</div></div>
+          <div><div class="fact__label">Email</div><div class="fact__value">${ME.email}</div></div>
+          <div><div class="fact__label">Company</div><div class="fact__value">${ME.company}</div></div>
+          <div><div class="fact__label">Roles</div><div class="fact__value">
+            <span class="roletag">Customer</span><span class="roletag">Publisher</span>
+            <span class="roletag is-admin">Admin</span></div></div>
+        </div>
+        <div class="acct__proffoot">
+          <button class="btn-quiet is-danger" id="acctLogout"><svg><use href="#i-logout"/></svg>Log out</button>
+        </div>
+      </div>`;
+  } else if (S.acctSec === 'dashboard') {
+    const kinds = ['schema','post','interp','kit'];
+    const tally = (list, keyOf) => list.reduce((by, p) =>
+      (by[keyOf(p)] = (by[keyOf(p)] || 0) + 1, by), {});
+    const sum = by => Object.values(by).reduce((a, n) => a + n, 0);
+    const desc = rows => rows.sort((a, b) => sum(b[2]) - sum(a[2]));
+    const inRange = key => p => DASH[key] === 'all' || p.ts <= +DASH[key];
+    const pubOf = p => PUB_STATUS(p)[0];
+    const licStat = p => { const n = daysLeft(licUntil(p));
+      return n === 0 ? 'expired' : n <= 14 ? 'expiring'
+        : licType(p) === 'Trial' ? 'trial' : 'active'; };
+    /* card 1 — assets I publish, by type / publisher / popularity */
+    const DA = DATA.filter(inRange('rangeA'))
+      .filter(p => DASH.maker === 'all' || p.maker === DASH.maker);
+    let aRows, aSegs = SEG.pub;
+    if (DASH.tabA === 'maker') {
+      aRows = desc([...new Set(DA.map(p => p.maker))].map(m =>
+        [m, '', tally(DA.filter(p => p.maker === m), pubOf)]));
+    } else if (DASH.tabA === 'pop') {
+      aSegs = SEG.kind;
+      aRows = desc(DA.map(p => [p.name, p.maker, { [p.kind]: p.dl }]));
+    } else {
+      aRows = kinds.map(k => [KINDS[k], '', tally(DA.filter(p => p.kind === k), pubOf)]);
+    }
+    aRows = aRows.slice(0, DASH.topA);
+    const aCtl = dtabs('tabA', [['type','Type'],['maker','Publisher'],['pop','Popularity']]);
+    const aChips = dchip('Range', RANGE_L[DASH.rangeA], 'rangeA')
+      + (DASH.tabA !== 'maker' ? dchip('Publisher', DASH.maker === 'all' ? 'All' : DASH.maker, 'maker') : '');
+    /* card 2 — who holds licenses on my assets (mock roster, scaled by range) */
+    const uf = { all: 1, 90: .6, 30: .3 }[DASH.rangeU];
+    const roster = [
+      ['Lenar Galiullin', '', { schema: 14, post: 8, kit: 3 }],
+      ['yvuser', 'yvuser', { schema: 7, post: 6, interp: 4, kit: 2 }],
+      ['Vladimir Emelianenko', 'ENCY Software Ltd', { post: 8 }],
+      ['Marcin Wasilewski', 'Premium Solutions Polska', { schema: 5, post: 3 }],
+      ['Grzegorz Oleszek', 'Premium Solutions Polska', { post: 2 }],
+      ['Yuriy Vishnevsky', 'ENCY Software Ltd', { schema: 1 }]];
+    const users = desc(roster.map(([n, s, by]) => [n, s,
+      Object.fromEntries(Object.entries(by).map(([k, v]) => [k, Math.round(v * uf)])
+        .filter(([, v]) => v > 0))]).filter(r => sum(r[2]) > 0)).slice(0, DASH.topU);
+    const userTotal = users.reduce((a, u) => a + sum(u[2]), 0);
+    const uChips = dchip('Range', RANGE_L[DASH.rangeU], 'rangeU');
+    /* card 3 — licenses on my assets, by type / asset / popularity */
+    const DL = DATA.filter(p => p.got).filter(inRange('rangeL'));
+    let lRows, lSegs = SEG.lic;
+    if (DASH.tabL === 'asset') {
+      lRows = desc(DL.map(p => [p.name, p.maker, { [licStat(p)]: 1 }]));
+    } else if (DASH.tabL === 'pop') {
+      lSegs = SEG.kind;
+      lRows = desc(DL.map(p => [p.name, p.maker, { [p.kind]: p.dl }]));
+    } else {
+      lRows = kinds.map(k => [KINDS[k], '', tally(DL.filter(p => p.kind === k), licStat)]);
+    }
+    lRows = lRows.slice(0, DASH.topL);
+    const lCtl = dtabs('tabL', [['type','Type'],['asset','Asset'],['pop','Popularity']]);
+    const lChips = dchip('Range', RANGE_L[DASH.rangeL], 'rangeL');
+    /* KPI row: the "is everything OK?" summary before any chart */
+    const got = DATA.filter(p => p.got);
+    const kpis = [
+      ['Assets', fmt(DATA.length), `+${DATA.filter(p => p.ts <= 30).length} in 30d`, ''],
+      ['Published', fmt(DATA.filter(p => pubOf(p) === 'ok').length),
+        `${Math.round(DATA.filter(p => pubOf(p) === 'ok').length / DATA.length * 100)}% of all`, ''],
+      ['Active licenses', fmt(got.filter(p => licStat(p) === 'active').length),
+        `+${got.filter(p => p.ts <= 30).length} in 30d`, ''],
+      ['Expiring in 14d', fmt(got.filter(p => licStat(p) === 'expiring').length),
+        'renewal needed', got.some(p => licStat(p) === 'expiring') ? 'warn' : ''],
+      ['Downloads', fmt(DATA.reduce((a, p) => a + p.dl, 0)),
+        `+${fmt(DATA.filter(p => p.ts <= 30).reduce((a, p) => a + p.dl, 0))} in 30d`, ''],
+    ].map(([l, v, d, w]) => `<div class="acard kpi${w ? ' kpi--warn' : ''}">
+      <div class="kpi__v">${v}</div><div class="kpi__l">${l}</div>
+      <div class="kpi__d">${d}</div></div>`).join('');
+    /* trend: new licenses bucketed by 30 days over the last year */
+    const buck = Array(12).fill(0);
+    got.forEach(p => { const m = Math.floor(p.ts / 30); if (m < 12) buck[11 - m]++; });
+    const W = 600, H = 110, P = 6, mxB = Math.max(...buck, 1);
+    const pts = buck.map((v, i) =>
+      [P + i * (W - 2 * P) / 11, H - P - v / mxB * (H - 2 * P - 14)]);
+    const mLabel = i => { const d = new Date();
+      d.setMonth(d.getMonth() - (11 - i)); return d.toLocaleString('en', { month: 'short' }); };
+    const trend = `<div class="acard acard--chart"><div class="acard__head">
+        <span class="acard__title">License activity</span><span class="panel__hspacer"></span>
+        <span class="acct__caption">new licenses per month · last 12 months</span></div>
+      <div class="trendwrap">
+        <svg class="trend" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          <polygon class="trend__area" points="${P},${H - P} ${pts.map(p => p.join(',')).join(' ')} ${W - P},${H - P}"/>
+          <polyline class="trend__line" points="${pts.map(p => p.join(',')).join(' ')}"/>
+        </svg>
+        <div class="trend__dots">${pts.map(([x, y], i) =>
+          `<i data-tip="${mLabel(i)}: ${buck[i]}" style="left:${x / W * 100}%;top:${y / H * 100}%"></i>`).join('')}</div>
+      </div>
+      <div class="trend__x">${buck.map((v, i) => `<span>${mLabel(i)}</span>`).join('')}</div></div>`;
+    inner = `<div class="acct__h1">Dashboard</div>
+      <div class="kpis">${kpis}</div>
+      <div class="acct__grid">
+        <div class="acct__col">
+          ${barCard('Asset distribution', fmt(DA.length) + ' assets', aRows, aSegs,
+            { top: 'topA', ctl: aCtl, chips: aChips, dense: DASH.tabA === 'pop' })}
+          ${barCard('Licenses on my assets', fmt(DL.length) + ' licenses', lRows, lSegs,
+            { top: 'topL', ctl: lCtl, chips: lChips, dense: DASH.tabL !== 'type' })}
+        </div>
+        ${barCard('Users of my assets', userTotal + ' licenses · ' + users.length + ' users',
+          users, SEG.kind, { top: 'topU', chips: uChips, ctl: '<div class="dtabs"></div>' })}
+      </div>
+      ${trend}`;
+  } else if (S.acctSec === 'licenses') {
+    const rows = DATA.filter(p => p.got);
+    inner = `<div class="acct__h1">My licenses<span class="acct__h1n">${rows.length}</span></div>`
+      + acctTable(rows, [
+        ['License #', p => `<span class="licno"><i class="licdot"></i>${licNo(p)}</span>`],
+        ['Name', acctId],
+        ['License type', p => `<span class="statetag ${licType(p) === 'Full' ? 'is-ok' : 'is-wait'}">${licType(p)}</span>`],
+        ['Created', acctDate, 'num'],
+        ['Valid until', p => { const d = licUntil(p), n = daysLeft(d);
+          return `<span class="${n <= 5 ? 'lic-soon' : ''}">${fmtDate(d)}</span>
+            <small class="lic-left">${n}d left</small>`; }, 'num'],
+        ['', () => '<span class="acticon" title="Open"><svg><use href="#i-ext"/></svg></span>', 'num'],
+      ], 'No licenses yet — Get a product in the catalog');
+  } else if (S.acctSec === 'published') {
+    const rows = DATA.filter(p => p.mine);
+    inner = `<div class="acct__h1">My published<span class="acct__h1n">${rows.length}</span></div>`
+      + acctTable(rows, [
+        ['Product', acctId], ['Category', p => `<span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span>`],
+        ['Status', p => { const [t, l] = PUB_STATUS(p);
+          return `<span class="statetag is-${t}">${l}</span>`; }],
+        ['Licenses', p => fmt(p.dl % 40), 'num'],
+        ['Downloads', p => fmt(p.dl), 'num'], ['Updated', acctDate, 'num'],
+        ['Price', p => priceHtml(p), 'num'],
+      ], 'Nothing published yet');
+  } else if (S.acctSec === 'import') {
+    inner = `<div class="acct__h1">Bulk import from ZIP</div>
+      <p class="acct__lead">Drop one or more archives — each top-level folder or zip becomes
+        a draft product, and auto-fill completes the missing fields.</p>
+      <div class="acct__grid acct__grid--aside">
+        <div class="acct__col">
+          <div class="acard"><div class="acard__head">
+              <span class="acard__title">Detection rules</span></div>
+            <div class="rules">
+              <span class="rule"><code>xml + osd</code>Machine Schema</span>
+              <span class="rule"><code>dll / sppx</code>Post Processor</span>
+              <span class="rule"><code>stncl</code>Interpreter</span>
+              <span class="rule"><code>mix of the above</code>Digital Machine Kit</span>
+              <span class="rule"><code>none</code>ignored</span>
+            </div></div>
+          <div class="acard"><div class="acard__head">
+              <span class="acard__title">Naming legend</span></div>
+            <p class="acct__hinttext">Paste your archive-naming convention so each component gets a
+              human-readable title. Leave empty to keep the raw archive name.</p>
+            <textarea class="field fieldarea" placeholder="Example: M3X = 3-axis mill, M5X = 5-axis mill, L2X = 2-axis lathe, MT = mill-turn, EDM = wire EDM. Then brand-series-model (e.g. Hurco-VMX-64Ti)."></textarea>
+          </div>
+          <div class="acard"><div class="acard__head">
+              <span class="acard__title">Auto-fill</span></div>
+            <div id="aiRows">
+              <button class="frow is-on" data-ai><span class="frow__check"><svg><use href="#i-check-b"/></svg></span>
+                <span>Generate cover image<small>Image of the machine on a clean background</small></span></button>
+              <button class="frow is-on" data-ai><span class="frow__check"><svg><use href="#i-check-b"/></svg></span>
+                <span>Generate description<small>Writes a 2–4 sentence product description</small></span></button>
+              <button class="frow is-on" data-ai><span class="frow__check"><svg><use href="#i-check-b"/></svg></span>
+                <span>Generate metadata<small>Machine type, axis count, controller, OEM, series, model</small></span></button>
+            </div>
+          </div>
+        </div>
+        <div class="acct__col acct__col--fill">
+          <div class="acard acard--drop">
+            <svg class="drop__icon"><use href="#i-box"/></svg>
+            <b>Drop one or more .zip archives here</b>
+            <span>Max 1024 MB per archive</span>
+            <button class="btn-secondary" data-stub>Select ZIP(s)</button>
+          </div>
+          <div class="acard"><div class="acard__head">
+              <span class="acard__title">Imports</span><span class="panel__hspacer"></span>
+              <span class="acct__caption">0</span></div>
+            <div class="empty"><svg><use href="#i-box"/></svg>
+              <b>No imports yet</b><span>Drop archives above to begin</span></div>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    inner = `<div class="acct__h1">Admin</div>
+      <div class="empty" style="padding:48px 16px"><svg><use href="#i-shield"/></svg>
+        <b>Admin tools</b><span>Moderation, people and statistics — not in this prototype yet</span></div>`;
+  }
+  body.innerHTML = `<div class="acct">
+    <nav class="acct__nav">${ACCT_SECS.map(([k, l, ic]) =>
+      `<button class="anav${S.acctSec === k ? ' is-on' : ''}" data-asec="${k}">
+        <svg><use href="#${ic}"/></svg>${l}</button>`).join('')}</nav>
+    <div class="acct__main">${inner}</div>
+  </div>`;
+  body.querySelectorAll('[data-asec]').forEach(b =>
+    b.addEventListener('click', () => { S.acctSec = b.dataset.asec; update(); }));
+  /* dashboard controls: tabs switch grouping, chips open pick-menus */
+  body.querySelectorAll('[data-dtab]').forEach(b =>
+    b.addEventListener('click', () => {
+      const [k, v] = b.dataset.dtab.split(':'); DASH[k] = v; renderAccount(); }));
+  const MAKERS = [...new Set(DATA.map(p => p.maker))].sort();
+  const dmenuOpts = key =>
+    key.startsWith('top') ? [[5, 'Top 5'], [10, 'Top 10'], [20, 'Top 20']]
+    : key.startsWith('range') ? [['all', RANGE_L.all], ['90', RANGE_L[90]], ['30', RANGE_L[30]]]
+    : [['all', 'All'], ...MAKERS.map(m => [m, m])];
+  body.querySelectorAll('[data-dmenu]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation();
+      const key = b.dataset.dmenu;
+      menu($('#sortMenu'), b,
+        dmenuOpts(key).map(([v, l]) => [v, l, String(DASH[key]) === String(v)]),
+        v => { DASH[key] = key.startsWith('top') ? +v : v; renderAccount(); }); }));
+  /* row clicks fall through to the storeBody delegate, which opens the product */
+  const lo = $('#acctLogout'); if (lo) lo.onclick = () => toast('Stubbed in this prototype');
+  body.querySelectorAll('[data-ai]').forEach(b =>
+    b.addEventListener('click', () => b.classList.toggle('is-on')));
+  body.querySelectorAll('[data-stub]').forEach(b =>
+    b.addEventListener('click', () => toast('Stubbed in this prototype')));
+}
+
 /* ------------------------------------------------------------- boot ------- */
-function update() { renderScope(); renderSide(); renderCatalog(); }
+function update() {
+  const acct = S.page === 'account';
+  $('#side').hidden = acct || S.sideHidden;
+  $('#backBtn').hidden = !acct;
+  $('#viewMode').hidden = acct;
+  $('#sortBtn').hidden = acct;
+  renderScope();
+  if (acct) { renderAccount(); return; }
+  renderSide(); renderCatalog();
+}
 syncThemeRow();
 update();
