@@ -100,6 +100,7 @@ function product(kind, extra) {
     price: wpick(['Free','Maintenance','Paid'], [.34,.33,.33]),
     priceVal: ri(19, 199) * 10,
     dl: ri(20, 4200), ts: ri(1, 900), got: rnd() < .04,
+    fav: rnd() < .03, mine: rnd() < .012,
   }, extra);
 }
 
@@ -140,7 +141,7 @@ DATA.forEach((p, i) => {
 
 /* ---------------------------------------------------------------- state --- */
 const S = {
-  scope: 'all', q: '', sort: 'recent', view: 'grid',
+  scope: 'all', q: '', sort: 'recent', view: 'grid', favOnly: false,
   makers: new Set(), controls: new Set(), types: new Set(), axes: new Set(),
   pubs: new Set(), units: new Set(), prices: new Set(),
   wa: { x: [200, 4000], y: [50, 1050], z: [320, 780] },
@@ -151,6 +152,7 @@ const WA_BOUNDS = { x: [200, 4000], y: [50, 1050], z: [320, 780] };
 /* ------------------------------------------------------------- filtering -- */
 function waActive(ax) { return S.wa[ax][0] > WA_BOUNDS[ax][0] || S.wa[ax][1] < WA_BOUNDS[ax][1]; }
 function matches(p, skip) {
+  if (S.favOnly && !p.fav) return false;
   if (skip !== 'scope' && S.scope !== 'all' && p.kind !== S.scope) return false;
   if (skip !== 'maker' && S.makers.size && !S.makers.has(p.maker)) return false;
   if (skip !== 'ctrl' && S.controls.size && !S.controls.has(p.control)) return false;
@@ -208,7 +210,9 @@ function cardHtml(p) {
   /* photo slot: real machine/control shots later; the placeholder is a quiet
      plate with the product-kind glyph so cards keep their height today */
   const KGLYPH = { post:'k-post', interp:'k-interp', schema:'k-schema', kit:'k-kit' };
-  return `<div class="mcard__photo${p.photo ? '' : ' is-empty'}">${p.photo
+  return `<span class="cstar${p.fav ? ' is-on' : ''}" data-fav title="Favorite">
+      <svg><use href="#${p.fav ? 'i-star-fill' : 'i-star'}"/></svg></span>
+    <div class="mcard__photo${p.photo ? '' : ' is-empty'}">${p.photo
       ? `<img src="${p.photo}" alt="" loading="lazy">`
       : `<svg><use href="#${KGLYPH[p.kind]}"/></svg>`}
     </div>
@@ -274,8 +278,8 @@ function renderCatalog(reset) {
   const body = $('#storeBody');
   if (reset !== false) { current = results(); S.shown = 0; body.innerHTML = ''; }
   $('#storeCnt').textContent = fmt(current.length);
-  $('#storeTitle').textContent = S.scope === 'all' ? 'All products'
-    : KINDS[S.scope] + (S.scope === 'kit' || S.scope === 'schema' ? 's' : 's');
+  $('#storeTitle').textContent = (S.favOnly ? 'Favorites · ' : '')
+    + (S.scope === 'all' ? 'All products' : KINDS[S.scope] + 's');
   let host = body.firstElementChild;
   if (!host || !host.dataset.host) {
     if (S.view === 'grid') { host = el('div', 'mgrid'); }
@@ -310,7 +314,19 @@ $('#storeBody').addEventListener('scroll', e => {
 });
 $('#storeBody').addEventListener('click', e => {
   const n = e.target.closest('[data-id]');
-  if (n) openDetail(DATA.find(x => x.id == n.dataset.id));
+  if (!n) return;
+  const p = DATA.find(x => x.id == n.dataset.id);
+  const star = e.target.closest('[data-fav]');
+  if (star) {
+    e.stopPropagation();
+    p.fav = !p.fav;
+    star.classList.toggle('is-on', p.fav);
+    star.innerHTML = `<svg><use href="#${p.fav ? 'i-star-fill' : 'i-star'}"/></svg>`;
+    if (S.favOnly) renderCatalog();
+    else toast(p.fav ? 'Added to favorites' : 'Removed from favorites');
+    return;
+  }
+  openDetail(p);
 });
 
 /* ------------------------------------------------------- product view ---- */
@@ -358,7 +374,9 @@ function openDetail(p) {
   $('#detailBody').innerHTML = `
     <div class="dhero"><div class="dhero__text">
       <div class="dhero__name">${esc(p.name)}
-        <span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span></div>
+        <span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span>
+        <button class="dstar${p.fav ? ' is-on' : ''}" id="dFav" title="Favorite">
+          <svg><use href="#${p.fav ? 'i-star-fill' : 'i-star'}"/></svg></button></div>
       <div class="dhero__meta">
         <span>${esc(p.publisher)}</span><span class="dhero__sep"></span>
         <span class="dhero__dl"><svg><use href="#i-download"/></svg>${fmt(p.dl)} downloads</span>
@@ -421,6 +439,11 @@ function openDetail(p) {
     toast(p.got ? `${p.name} added to your workspace` : `${p.name} removed`); };
   const req = $('#detailBody [data-req]');
   if (req) req.onclick = () => toast('Request sent to the publisher');
+  $('#dFav').onclick = () => { p.fav = !p.fav;
+    $('#dFav').classList.toggle('is-on', p.fav);
+    $('#dFav').innerHTML = `<svg><use href="#${p.fav ? 'i-star-fill' : 'i-star'}"/></svg>`;
+    if (S.favOnly) renderCatalog();
+    toast(p.fav ? 'Added to favorites' : 'Removed from favorites'); };
   $('#detailBody').querySelectorAll('[data-rec]').forEach(b =>
     b.addEventListener('click', () => openDetail(DATA.find(x => x.id == b.dataset.rec))));
   win.hidden = false;
@@ -539,6 +562,14 @@ function renderScope() {
     seg.appendChild(b);
   });
 }
+/* favorites: a toggle next to the scope switch, as in the Store */
+$('#favBtn').onclick = () => {
+  S.favOnly = !S.favOnly;
+  const b = $('#favBtn');
+  b.classList.toggle('is-on', S.favOnly);
+  $('svg use', b).setAttribute('href', S.favOnly ? '#i-star-fill' : '#i-star');
+  update();
+};
 /* collapse/expand filter sections */
 document.querySelectorAll('.fsec__head').forEach(h =>
   h.addEventListener('click', () => h.closest('.fsec').classList.toggle('is-closed')));

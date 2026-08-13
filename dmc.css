@@ -43,13 +43,14 @@
 .header .segmented button.is-on.seg--interp { background:rgba(149,132,235,.2);  color:var(--op-violet); }
 .header .segmented button.is-on.seg--schema { background:var(--ec-green-16);    color:var(--ec-badge); }
 .header .segmented button.is-on.seg--kit    { background:rgba(235,193,74,.18);  color:var(--ec-amber); }
-/* light theme: inverted — SOLID hue plate, ink picked by contrast (white on
-   blue/violet/green, near-black on the one light hue, amber) */
+/* light theme: inverted — SOLID hue plate, ink picked by contrast */
 :root[data-theme="light"] .header .segmented button.is-on.seg--post   { background:var(--ec-blue); color:#fff; }
 :root[data-theme="light"] .header .segmented button.is-on.seg--interp { background:#6a4fd6; color:#fff; }
 :root[data-theme="light"] .header .segmented button.is-on.seg--schema { background:var(--ec-green); color:#fff; }
 :root[data-theme="light"] .header .segmented button.is-on.seg--kit    { background:var(--ec-amber); color:#1a1405; }
 .header .segmented button.is-on[class*="seg--"] .seg__n { opacity:.55; }
+/* favorites on: the solid star in plain fg reads as "filter applied" */
+#favBtn.is-on { color:var(--ec-fg-100); }
 .seg__n { margin-left:5px; font-style:normal; color:var(--ec-fg-48);
   font-variant-numeric:tabular-nums; }
 
@@ -197,7 +198,20 @@
 /* ---- grid of product cards ---- */
 .mgrid { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr));
   gap:8px; padding:12px; }
-.mcard { display:flex; flex-direction:column; text-align:left; overflow:hidden;
+/* favorite star (the Store recipe): hover-revealed, no plate; on = the solid
+   glyph in plain fg, slightly larger, still no background */
+.cstar { position:absolute; top:6px; right:6px; z-index:2;
+  display:grid; place-items:center; width:26px; height:26px;
+  border-radius:var(--ec-radius); color:var(--ec-fg-48); opacity:0;
+  transition:opacity .12s,color .12s,background .12s; }
+.mcard:hover .cstar { opacity:1; }
+.cstar:hover { background:var(--ec-fg-8); color:var(--ec-fg-100); }
+.cstar.is-on { opacity:1; color:var(--ec-fg-100); }
+.cstar.is-on:hover { background:none; }
+.cstar svg { width:14px; height:14px; }
+.cstar.is-on svg { width:17px; height:17px; }
+
+.mcard { position:relative; display:flex; flex-direction:column; text-align:left; overflow:hidden;
   border:1px solid transparent; border-radius:var(--ec-radius-md); background:var(--ec-fg-4);
   cursor:pointer; transition:background .12s,border-color .12s; }
 .mcard:hover { background:var(--ec-fg-6); border-color:var(--border); }
@@ -357,6 +371,14 @@
 .dhero__text { flex:1; min-width:0; }
 .dhero__name { display:flex; align-items:center; gap:10px; font-size:20px; line-height:26px;
   font-weight:600; color:var(--ec-fg-100); }
+.dstar { display:grid; place-items:center; width:26px; height:26px; flex-shrink:0;
+  border-radius:var(--ec-radius); color:var(--ec-fg-48);
+  transition:background .12s,color .12s; }
+.dstar:hover { background:var(--ec-fg-8); color:var(--ec-fg-100); }
+.dstar.is-on { color:var(--ec-fg-100); }
+.dstar.is-on:hover { background:none; }
+.dstar svg { width:15px; height:15px; }
+.dstar.is-on svg { width:18px; height:18px; }
 .dhero__meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:6px;
   font-size:11px; color:var(--ec-fg-56); }
 .dhero__sep { width:1px; height:10px; flex-shrink:0; background:var(--ec-fg-16); }
