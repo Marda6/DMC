@@ -676,13 +676,24 @@ function toast(msg) { const t = $('#toast');
 /* ------------------------------------------------------------ account ----- */
 const ME = { user: 'ruslan.m', name: 'Ruslan Mardanshin', email: 'ruslan.m@encycam.io',
   company: 'ENCY Software Ltd', since: '14/03/2024' };
+/* the account nav is two frames: my own things, then the moderation tools */
 const ACCT_SECS = [
-  ['profile', 'Profile', 'i-user'],
-  ['dashboard', 'Dashboard', 'i-dash'],
-  ['licenses', 'My licenses', 'i-check-circle'],
-  ['published', 'My published', 'i-upload'],
-  ['import', 'Bulk import', 'i-box'],
-  ['admin', 'Admin', 'i-shield'],
+  ['', [
+    ['profile', 'Profile', 'i-user'],
+    ['dashboard', 'Dashboard', 'i-dash'],
+    ['licenses', 'My licenses', 'i-check-circle'],
+    ['published', 'My published', 'i-upload'],
+    ['import', 'Bulk import', 'i-box'],
+  ]],
+  ['Admin', [
+    ['requests', 'Requests', 'i-shield'],
+    ['accepts', 'Accepts', 'i-check'],
+    ['compreq', 'Component requests', 'i-mail'],
+    ['publishers', 'Publishers', 'i-pubs'],
+    ['users', 'Users', 'i-users'],
+    ['activity', 'Activity log', 'i-clock'],
+    ['analytics', 'Analytics', 'i-chart'],
+  ]],
 ];
 function openAccount(sec) { S.page = 'account'; S.acctSec = sec || 'profile'; update(); }
 function closeAccount() { S.page = 'catalog'; update(); }
@@ -751,6 +762,37 @@ function barCard(title, note, rows, segs, opts = {}) {
     ${rows.length ? `<div class="bars${opts.dense ? ' bars--dense' : ''}">${body}</div>
       <div class="acard__legend">${legend}</div>` : empty}</div>`;
 }
+/* KPI tiles: value, label, and a delta line pinned to the bottom edge */
+const kpiRow = items => `<div class="kpis">${items.map(([l, v, d, warn]) =>
+  `<div class="acard kpi${warn ? ' kpi--warn' : ''}">
+    <div class="kpi__v">${v}</div><div class="kpi__l">${l}</div>
+    <div class="kpi__d">${d}</div></div>`).join('')}</div>`;
+/* 12-month area chart; buckets[0] is the oldest month */
+const monthLabel = i => { const d = new Date();
+  d.setMonth(d.getMonth() - (11 - i)); return d.toLocaleString('en', { month: 'short' }); };
+function trendCard(title, note, buck) {
+  const W = 600, H = 110, P = 6, mx = Math.max(...buck, 1);
+  const pts = buck.map((v, i) =>
+    [P + i * (W - 2 * P) / (buck.length - 1), H - P - v / mx * (H - 2 * P - 14)]);
+  return `<div class="acard acard--chart"><div class="acard__head">
+      <span class="acard__title">${title}</span><span class="panel__hspacer"></span>
+      <span class="acct__caption">${note}</span></div>
+    <div class="trendwrap">
+      <svg class="trend" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <polygon class="trend__area" points="${P},${H - P} ${pts.map(p => p.join(',')).join(' ')} ${W - P},${H - P}"/>
+        <polyline class="trend__line" points="${pts.map(p => p.join(',')).join(' ')}"/>
+      </svg>
+      <div class="trend__dots">${pts.map(([x, y], i) =>
+        `<i data-tip="${monthLabel(i)}: ${fmt(buck[i])}" style="left:${x / W * 100}%;top:${y / H * 100}%"></i>`).join('')}</div>
+    </div>
+    <div class="trend__x">${buck.map((v, i) => `<span>${monthLabel(i)}</span>`).join('')}</div></div>`;
+}
+/* month buckets over the last year, from the record's "days ago" field */
+const byMonth = (list, val = () => 1) => {
+  const b = Array(12).fill(0);
+  list.forEach(p => { const m = Math.floor(p.ts / 30); if (m < 12) b[11 - m] += val(p); });
+  return b;
+};
 /* one floating tooltip for all bar segments */
 const barTip = el('div', 'bartip'); barTip.hidden = true;
 document.body.appendChild(barTip);
@@ -771,7 +813,7 @@ function renderAccount() {
   let inner = '';
   if (S.acctSec === 'profile') {
     inner = `<div class="acct__h1">Profile</div>
-      <div class="acard">
+      <div class="acard acct__prof">
         <div class="acct__factgrid">
           <div><div class="fact__label">Full name</div><div class="fact__value">${ME.name}</div></div>
           <div><div class="fact__label">Username</div><div class="fact__value">${ME.user}</div></div>
@@ -843,41 +885,21 @@ function renderAccount() {
     const lChips = dchip('Range', RANGE_L[DASH.rangeL], 'rangeL');
     /* KPI row: the "is everything OK?" summary before any chart */
     const got = DATA.filter(p => p.got);
-    const kpis = [
-      ['Assets', fmt(DATA.length), `+${DATA.filter(p => p.ts <= 30).length} in 30d`, ''],
-      ['Published', fmt(DATA.filter(p => pubOf(p) === 'ok').length),
-        `${Math.round(DATA.filter(p => pubOf(p) === 'ok').length / DATA.length * 100)}% of all`, ''],
+    const pubd = DATA.filter(p => pubOf(p) === 'ok').length;
+    const kpis = kpiRow([
+      ['Assets', fmt(DATA.length), `+${DATA.filter(p => p.ts <= 30).length} in 30d`],
+      ['Published', fmt(pubd), `${Math.round(pubd / DATA.length * 100)}% of all`],
       ['Active licenses', fmt(got.filter(p => licStat(p) === 'active').length),
-        `+${got.filter(p => p.ts <= 30).length} in 30d`, ''],
+        `+${got.filter(p => p.ts <= 30).length} in 30d`],
       ['Expiring in 14d', fmt(got.filter(p => licStat(p) === 'expiring').length),
-        'renewal needed', got.some(p => licStat(p) === 'expiring') ? 'warn' : ''],
+        'renewal needed', got.some(p => licStat(p) === 'expiring')],
       ['Downloads', fmt(DATA.reduce((a, p) => a + p.dl, 0)),
-        `+${fmt(DATA.filter(p => p.ts <= 30).reduce((a, p) => a + p.dl, 0))} in 30d`, ''],
-    ].map(([l, v, d, w]) => `<div class="acard kpi${w ? ' kpi--warn' : ''}">
-      <div class="kpi__v">${v}</div><div class="kpi__l">${l}</div>
-      <div class="kpi__d">${d}</div></div>`).join('');
-    /* trend: new licenses bucketed by 30 days over the last year */
-    const buck = Array(12).fill(0);
-    got.forEach(p => { const m = Math.floor(p.ts / 30); if (m < 12) buck[11 - m]++; });
-    const W = 600, H = 110, P = 6, mxB = Math.max(...buck, 1);
-    const pts = buck.map((v, i) =>
-      [P + i * (W - 2 * P) / 11, H - P - v / mxB * (H - 2 * P - 14)]);
-    const mLabel = i => { const d = new Date();
-      d.setMonth(d.getMonth() - (11 - i)); return d.toLocaleString('en', { month: 'short' }); };
-    const trend = `<div class="acard acard--chart"><div class="acard__head">
-        <span class="acard__title">License activity</span><span class="panel__hspacer"></span>
-        <span class="acct__caption">new licenses per month · last 12 months</span></div>
-      <div class="trendwrap">
-        <svg class="trend" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-          <polygon class="trend__area" points="${P},${H - P} ${pts.map(p => p.join(',')).join(' ')} ${W - P},${H - P}"/>
-          <polyline class="trend__line" points="${pts.map(p => p.join(',')).join(' ')}"/>
-        </svg>
-        <div class="trend__dots">${pts.map(([x, y], i) =>
-          `<i data-tip="${mLabel(i)}: ${buck[i]}" style="left:${x / W * 100}%;top:${y / H * 100}%"></i>`).join('')}</div>
-      </div>
-      <div class="trend__x">${buck.map((v, i) => `<span>${mLabel(i)}</span>`).join('')}</div></div>`;
+        `+${fmt(DATA.filter(p => p.ts <= 30).reduce((a, p) => a + p.dl, 0))} in 30d`],
+    ]);
+    const trend = trendCard('License activity',
+      'new licenses per month · last 12 months', byMonth(got));
     inner = `<div class="acct__h1">Dashboard</div>
-      <div class="kpis">${kpis}</div>
+      ${kpis}
       <div class="acct__grid">
         <div class="acct__col">
           ${barCard('Asset distribution', fmt(DA.length) + ' assets', aRows, aSegs,
@@ -962,14 +984,18 @@ function renderAccount() {
         </div>
       </div>`;
   } else {
-    inner = `<div class="acct__h1">Admin</div>
-      <div class="empty" style="padding:48px 16px"><svg><use href="#i-shield"/></svg>
-        <b>Admin tools</b><span>Moderation, people and statistics — not in this prototype yet</span></div>`;
+    /* admin sections: content lands here once the spec arrives */
+    const sec = ACCT_SECS.flatMap(([, s]) => s).find(([k]) => k === S.acctSec);
+    inner = `<div class="acct__h1">${sec ? sec[1] : 'Admin'}</div>
+      <div class="empty" style="padding:48px 16px"><svg><use href="#${sec ? sec[2] : 'i-shield'}"/></svg>
+        <b>${sec ? sec[1] : 'Admin'}</b><span>Section content is next up</span></div>`;
   }
   body.innerHTML = `<div class="acct">
-    <nav class="acct__nav">${ACCT_SECS.map(([k, l, ic]) =>
-      `<button class="anav${S.acctSec === k ? ' is-on' : ''}" data-asec="${k}">
-        <svg><use href="#${ic}"/></svg>${l}</button>`).join('')}</nav>
+    <nav class="acct__nav">${ACCT_SECS.map(([group, secs]) =>
+      `<div class="anav__frame">${group ? `<div class="anav__cap">${group}</div>` : ''}
+        ${secs.map(([k, l, ic]) =>
+          `<button class="anav${S.acctSec === k ? ' is-on' : ''}" data-asec="${k}">
+            <svg><use href="#${ic}"/></svg>${l}</button>`).join('')}</div>`).join('')}</nav>
     <div class="acct__main">${inner}</div>
   </div>`;
   body.querySelectorAll('[data-asec]').forEach(b =>
@@ -1004,6 +1030,9 @@ function update() {
   $('#backBtn').hidden = !acct;
   $('#viewMode').hidden = acct;
   $('#sortBtn').hidden = acct;
+  /* previews and the view switch only mean something for the catalog list */
+  $('#prevBtn').hidden = acct;
+  $('#headSep').hidden = acct;
   renderScope();
   if (acct) { renderAccount(); return; }
   renderSide(); renderCatalog();

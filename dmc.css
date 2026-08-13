@@ -497,9 +497,13 @@
 /* ============================================================ ACCOUNT ===== */
 /* full-panel page inside the content panel: left nav + one content column */
 .acct { display:flex; gap:12px; padding:12px; max-width:1400px; margin:0 auto; }
-.acct__nav { width:196px; flex-shrink:0; display:flex; flex-direction:column; gap:2px;
-  padding:4px; border-radius:var(--ec-radius-md); background:var(--ec-fg-4);
+/* the nav is a stack of frames: my own sections, then the admin tools */
+.acct__nav { width:196px; flex-shrink:0; display:flex; flex-direction:column; gap:8px;
   align-self:flex-start; }
+.anav__frame { display:flex; flex-direction:column; gap:2px; padding:4px;
+  border-radius:var(--ec-radius-md); background:var(--ec-fg-4); }
+.anav__cap { padding:4px 8px 2px; font-size:10px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--ec-fg-48); }
 .anav { display:flex; align-items:center; gap:8px; height:26px; padding:0 8px;
   border-radius:var(--ec-radius); font-size:12px; color:var(--ec-fg-72); text-align:left;
   transition:background .12s,color .12s; }
@@ -518,8 +522,9 @@
 .acard--flush { padding:0; overflow:hidden; }
 .acard--flush th:first-child, .acard--flush td:first-child { padding-left:12px; }
 .acard--flush th:last-child, .acard--flush td:last-child { padding-right:12px; }
-.acct__factgrid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
-  gap:12px 24px; }
+/* a read-only fact list scans best as one narrow column */
+.acct__prof { max-width:420px; }
+.acct__factgrid { display:grid; gap:12px; }
 .fact__label { margin-bottom:2px; font-size:10px; letter-spacing:.04em;
   text-transform:uppercase; color:var(--ec-fg-48); }
 .fact__value { display:flex; align-items:center; gap:6px; font-size:12px;
