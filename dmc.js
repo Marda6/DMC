@@ -735,6 +735,8 @@ const DASH = { tabA: 'type', tabL: 'type', topA: 10, topU: 10, topL: 10,
 const RANGE_L = { all: 'All time', 90: 'Last 90 days', 30: 'Last 30 days' };
 const dchip = (label, val, key) => `<button class="dchip" data-dmenu="${key}">
   ${label}: <b>${esc(String(val))}</b><svg><use href="#i-chevdown"/></svg></button>`;
+const dchipStub = (label, val) => `<button class="dchip" data-stub>
+  ${label}: <b>${esc(val)}</b><svg><use href="#i-chevdown"/></svg></button>`;
 const dtabs = (key, tabs) => `<div class="dtabs">${tabs.map(([v, l]) =>
   `<button class="dtab${DASH[key] === v ? ' is-on' : ''}" data-dtab="${key}:${v}">${l}</button>`).join('')}</div>`;
 function barCard(title, note, rows, segs, opts = {}) {
@@ -805,6 +807,140 @@ document.addEventListener('mouseover', e => {
     Math.min(r.left + r.width / 2, innerWidth - barTip.offsetWidth / 2 - 8)) + 'px';
   barTip.style.top = (r.bottom + 6) + 'px';
 });
+
+/* --------------------------------------------------------------- admin ---- */
+/* admin UI state: publishers tab, expanded teams, component-request tab,
+   analytics range in days */
+const ADM = { pubTab: 'teams', pubOpen: new Set(['CAMSUPS Co., Ltd.']), crTab: 'new', range: 30 };
+const atabs = (key, tabs) => `<div class="dtabs">${tabs.map(([v, l, n]) =>
+  `<button class="dtab${String(ADM[key]) === String(v) ? ' is-on' : ''}" data-atab="${key}:${v}">
+    ${l}${n != null ? `<span class="dtab__n">${n}</span>` : ''}</button>`).join('')}</div>`;
+
+/* dealer teams: [name, isPublisher, members [email, person, isPrimary]] */
+const TEAMS = [
+  ['ENCY Software Ltd', 1, Array.from({ length: 29 }, (_, i) =>
+    [`user${i + 1}@encycam.io`, '', i === 0])],
+  ['PMS Tooling', 1, [['sudhakar@pmstooling.com', 'Mr J. Sudhakar', 0]]],
+  ['Robotic Solutions Inc.', 1, [['corey@roboticsolutionsinc.com', 'Corey Drake', 1]]],
+  ['Global Robots Limited', 0, []],
+  ['Suzhou Layway Intelligent Manufacturing Co., Ltd', 0, []],
+  ['Alibre France', 0, []],
+  ['SPS Softtech Solutions', 0, []],
+  ['Triovibe Solutions Private Limited', 0, []],
+  ['Shanghai Qianghu Information Technology Co., Ltd', 1, [['aterf_yu@qianghu.com', 'Aterf Yu', 1]]],
+  ['BERMAQ.com', 0, []],
+  ['CAMSUPS Co., Ltd.', 1, [
+    ['iwaki@camsups.co.jp', 'Shinya Iwaki', 0], ['katayama@camsups.co.jp', 'Shun Katayama', 0],
+    ['meguro@camsups.co.jp', 'Meguro Rinta', 0], ['shimura@camsups.co.jp', 'Gozo Shimura', 1]]],
+  ['Reliable Solutions', 0, []],
+  ['S&J Automations', 0, []],
+  ['Polymeta C Ltd.', 0, []],
+  ['Techsoft Services', 0, []],
+  ['Smard Tech.', 0, []],
+  ['Softwarecadcam S.A. de C.V.', 1, [
+    ['ana@softwarecadcam.mx', 'Ana Reyes', 1], ['luis@softwarecadcam.mx', 'Luis Ortega', 0]]],
+];
+/* dealer space import: [company, country, contacts, hasAccess] */
+const DEALERS = [
+  ['Global Robots Limited', 'United Kingdom', 0, 0], ['PMS Tooling', 'India', 1, 1],
+  ['Robotic Solutions Inc.', 'United States of America', 3, 1],
+  ['Suzhou Layway Intelligent Manufacturing Co., Ltd', 'China', 4, 0],
+  ['Alibre France', 'France', 4, 0], ['SPS Softtech Solutions', 'India', 2, 0],
+  ['Triovibe Solutions Private Limited', 'India', 1, 0],
+  ['Shanghai Qianghu Information Technology Co., Ltd', 'China', 1, 1],
+  ['BERMAQ.com', 'Spain', 4, 0], ['CAMSUPS Co., Ltd.', 'Japan', 9, 1],
+  ['Reliable Solutions', 'India', 2, 0],
+];
+const ACCESS_REQ = [
+  ['Gerry Grainger', 'gerry.grainger@encycam.com', 'gerry.grainger@encycam.com',
+    'ENCY SOFTWARE LTD', '13/08/2026'],
+  ['Andreas Reitz', 'reitz@cnc-technik.de', 'andreas',
+    'I want to add our robot and machines', '09/07/2026'],
+  ['Javier Jaramillo', 'javierj@encycam.mx', 'javierj',
+    'Hello everyone, i need access to upload my schemas, thanks!', '28/05/2026'],
+];
+/* users registry: [id, name, company, dmcLicenses, encyLicenses] */
+const ADM_USERS = [
+  ['e1cbb429-5228-4f4b-aee2-ad26ffd4fa0b', '!YV !YV', 'ENCY Software Ltd', 1, 0],
+  ['04cdc660-428e-4f7c-b2e4-5e234eff1dc8', 'Evgeniy Ivakhnik', 'ENCY Software Ltd', 1, 0],
+  ['dbe79622-56dc-4532-9a3c-9e23a4bc24f2', 'Grzegorz Oleszek', 'Premium Solutions Polska Sp. z o.o.', 2, 0],
+  ['9b23b524-b9db-4f70-8069-d8c67a568268', 'ilya_cl', 'test LM', 1, 1],
+  ['5ec67609-30eb-4eaa-9eed-8b9f108591c2', 'Lenar Galiullin', '', 7, 7],
+  ['21e61c19-1e1b-44ef-8685-782e939590ba', 'Lenar Galiullin', '', 26, 26],
+  ['9de3c041-ff58-48f6-87d7-2174c41b0b93', 'Marcin Wasilewski', 'Premium Solutions Polska Sp. z o.o.', 8, 0],
+  ['5d38f97e-aec7-4ab8-86e2-e2f1acd03818', 'Vladimir Emelianenko', 'ENCY Software Ltd', 8, 0],
+  ['6b9d864a-7a80-489d-afa7-a33b2593888c', 'Yuriy Vishnevsky', 'ENCY Software Ltd', 1, 0],
+  ['76c6e708-7b07-41c0-b32a-fc358e896b47', 'yvuser', 'yvuser', 19, 13],
+];
+/* audit trail: [when, actor, action, summary, mono detail, highlight] */
+const ACTIVITY = [
+  ['2026-08-21 12:00:38', 'ruslan.m', 'Profiles synced from Keycloak',
+    'Profile sync skipped — Keycloak Admin API unavailable',
+    'total=89 adminApiError=401 Unauthorized on POST …/openid-connect/token: [no body]', ''],
+  ['2026-08-21 11:57:40', 'hazrat', 'Profiles synced from Keycloak',
+    'Profile sync skipped — Keycloak Admin API unavailable',
+    'total=89 adminApiError=401 Unauthorized on POST …/openid-connect/token: [no body]', ''],
+  ['2026-08-21 11:49:26', 'yv@encycam.com', 'Product updated',
+    'Updated product "Tormach 15L Slant-Pro"', 'productId=5426d050-d4bd-4f5c-aee8-d72424efd77f', ''],
+  ['2026-08-21 11:48:58', 'yv@encycam.com', 'Product updated',
+    'Updated product "Tormach 15L Slant-Pro"', 'productId=5426d050-d4bd-4f5c-aee8-d72424efd77f', ''],
+  ['2026-08-21 11:34:29', 'yv@encycam.com', 'Product updated',
+    'Updated product "Tormach 15L Slant-Pro"', 'productId=5426d050-d4bd-4f5c-aee8-d72424efd77f', ''],
+  ['2026-08-21 11:29:02', 'r.latipov@encycam.com', 'Profiles synced from Keycloak',
+    'Profile sync skipped — Keycloak Admin API unavailable',
+    'total=88 adminApiError=401 Unauthorized on POST …/openid-connect/token: [no body]', ''],
+  ['2026-08-20 14:30:38', 'yv@encycam.com', 'Product updated',
+    'Updated product "Hwacheon Vesta 1000 - Fanuc 0i-MD"', 'productId=2fc1e983-de48-450e-97bf-47b56e0f1b5b', ''],
+  ['2026-08-20 14:25:26', 'yv@encycam.com', 'Product link added',
+    'Added 1 MADE_FOR link(s)', 'productId=38767605-17a2-44d2-87d8-d744f29f376d type=MADE_FOR', ''],
+  ['2026-08-20 14:20:59', 'yv@encycam.com', 'Product status changed',
+    'Changed status of "Hwacheon Vesta 1000 - Fanuc 0i-MD": PENDING_REVIEW → PUBLISHED',
+    'from=PENDING_REVIEW to=PUBLISHED', 'warn'],
+  ['2026-08-20 14:20:06', 'yv@encycam.com', 'Product created',
+    'Created product "Hwacheon Vesta 1000 - Fanuc 0i-MD"', 'status=PENDING_REVIEW', 'new'],
+  ['2026-08-20 12:02:42', 'yv@encycam.com', 'Product link added',
+    'Added 1 SUITABLE link(s)', 'productId=03921a5f-1972-4ac3-a2e1-5e32e039ee43 type=SUITABLE', ''],
+  ['2026-08-20 12:02:41', 'yv@encycam.com', 'Product updated',
+    'Updated product "Hwacheon VESTA-1000"', 'productId=03921a5f-1972-4ac3-a2e1-5e32e039ee43', ''],
+];
+/* analytics: 90 seeded days of visits / license activations, newest last */
+const AN_DAYS = Array.from({ length: 90 }, () => {
+  const quiet = rnd() < .35;
+  return {
+    in: quiet ? 0 : ri(0, 8), anon: quiet ? (rnd() < .5 ? ri(0, 2) : 0) : ri(0, 5),
+    schema: rnd() < .1 ? ri(1, 3) : 0, post: rnd() < .14 ? ri(1, 9) : 0,
+    interp: rnd() < .04 ? 1 : 0, kit: rnd() < .04 ? ri(1, 2) : 0,
+  };
+});
+const AN_COUNTRIES = [['NL', 103], ['LV', 42], ['RU', 38], ['CY', 33], ['BE', 11],
+  ['US', 10], ['MX', 5], ['DE', 3], ['TR', 3], ['PL', 2]];
+const AN_COMP = [
+  ['DMG MORI CLX 350', 'schema', 8, 0, 1, 2], ['Fanuc 30i M', 'post', 7, 0, 0, 0],
+  ['Fanuc 31i B Plus', 'post', 7, 0, 0, 0], ['Tormach PCNC', 'schema', 7, 0, 1, 1],
+  ['Sinumerik 840D', 'post', 6, 0, 0, 0], ['Tormach 15L Slant-Pro', 'schema', 6, 0, 0, 0],
+  ['Fanuc 0i-MF Plus', 'post', 5, 1, 0, 0], ['Fanuc 31i A', 'post', 5, 0, 0, 0],
+];
+/* daily column chart: one stacked column per day, shared bar tooltip */
+function colChart(title, note, days, segs) {
+  const max = Math.max(...days.map(d => segs.reduce((a, [k]) => a + (d[k] || 0), 0)), 1);
+  const cols = days.map((d, i) => {
+    const dt = new Date(); dt.setDate(dt.getDate() - (days.length - 1 - i));
+    const fill = segs.filter(([k]) => d[k]).map(([k, l, c]) =>
+      `<i data-tip="${fmtDate(dt)} — ${l}: ${d[k]}"
+        style="height:${d[k] / max * 100}%;background:${c}"></i>`).join('');
+    return `<span class="col">${fill}</span>`; }).join('');
+  const first = new Date(); first.setDate(first.getDate() - (days.length - 1));
+  const legend = segs.map(([, l, c]) =>
+    `<span class="legend__item"><i style="background:${c}"></i>${l}</span>`).join('');
+  return `<div class="acard acard--chart"><div class="acard__head">
+      <span class="acard__title">${title}</span><span class="panel__hspacer"></span>
+      <span class="acct__caption">${note}</span></div>
+    <div class="cols">${cols}</div>
+    <div class="trend__x"><span>${fmtDate(first)}</span><span>${fmtDate(new Date())}</span></div>
+    <div class="acard__legend">${legend}</div></div>`;
+}
+const actionsBtn = p => `<button class="dchip dchip--act" data-actm="${p.id}">
+  Actions<svg><use href="#i-chevdown"/></svg></button>`;
 
 function renderAccount() {
   const body = $('#storeBody');
@@ -983,12 +1119,174 @@ function renderAccount() {
           </div>
         </div>
       </div>`;
-  } else {
-    /* admin sections: content lands here once the spec arrives */
-    const sec = ACCT_SECS.flatMap(([, s]) => s).find(([k]) => k === S.acctSec);
-    inner = `<div class="acct__h1">${sec ? sec[1] : 'Admin'}</div>
-      <div class="empty" style="padding:48px 16px"><svg><use href="#${sec ? sec[2] : 'i-shield'}"/></svg>
-        <b>${sec ? sec[1] : 'Admin'}</b><span>Section content is next up</span></div>`;
+  } else if (S.acctSec === 'requests' || S.acctSec === 'accepts') {
+    /* moderation queue and the published registry share one table shape */
+    const req = S.acctSec === 'requests';
+    const rows = DATA.filter(p => PUB_STATUS(p)[0] === (req ? 'wait' : 'ok'));
+    const shown = rows.slice(0, 30);
+    inner = `<div class="acct__h1">${req ? 'Requests' : 'Accepts'}<span class="acct__h1n">${rows.length}</span></div>
+      <p class="acct__lead">${req
+        ? 'Submissions waiting for review. Accept publishes the asset, Reject returns it to the publisher.'
+        : 'Everything that passed review and is live in the catalog. Revoke pulls an asset back to review.'}</p>`
+      + acctTable(shown, [
+        [req ? 'Submission' : 'Product', acctId],
+        ['Category', p => `<span class="kindtag kindtag--${p.kind}">${KINDS[p.kind]}</span>`],
+        ['Publisher', p => esc(p.publisher)],
+        ['Control', p => esc(p.control)],
+        ['Axes', p => p.axes, 'num'],
+        [req ? 'Submitted' : 'Published', acctDate, 'num'],
+        ['Status', () => `<span class="statetag ${req ? 'is-wait' : 'is-ok'}">${req ? 'Pending review' : 'Published'}</span>`],
+        ['', actionsBtn, 'num'],
+      ], req ? 'Review queue is empty' : 'Nothing published yet')
+      + (rows.length > shown.length
+        ? `<div class="acct__more">Showing ${shown.length} of ${fmt(rows.length)}</div>` : '');
+  } else if (S.acctSec === 'compreq') {
+    const tabs = [['new', 'New', 0], ['prog', 'In progress', 0], ['done', 'Done', 0],
+      ['rej', 'Rejected', 0], ['all', 'All', 0]];
+    inner = `<div class="acct__h1">Component requests</div>
+      <p class="acct__lead">Users ask here for posts, schemas and interpreters that are missing
+        from the catalog.</p>
+      ${atabs('crTab', tabs)}
+      <div class="acard"><div class="empty" style="padding:32px 8px">
+        <svg><use href="#i-mail"/></svg><b>No requests yet</b>
+        <span>Requests from the catalog and from product cards will appear here</span></div></div>`;
+  } else if (S.acctSec === 'publishers') {
+    const users = TEAMS.reduce((a, t) => a + t[2].length, 0);
+    let tab = '';
+    if (ADM.pubTab === 'teams') {
+      tab = `<div class="acard acard--flush">${TEAMS.map(([name, pub, mem]) => {
+        const open = ADM.pubOpen.has(name);
+        return `<div class="trow${open ? ' is-open' : ''}${mem.length ? '' : ' no-kids'}" data-team="${esc(name)}">
+            <svg class="trow__chev"><use href="#i-chevdown"/></svg>
+            <span class="trow__name">${esc(name)}</span><span class="panel__hspacer"></span>
+            ${pub ? '<span class="statetag is-ok">Publisher</span>' : ''}
+            <span class="trow__n"><svg><use href="#i-users"/></svg>${mem.length}</span></div>`
+          + (open ? mem.slice(0, 8).map(([mail, person, prim]) =>
+            `<div class="tmember"><span class="tmember__mail">${esc(mail)}</span>
+              ${person ? `<span class="tmember__name">— ${esc(person)}</span>` : ''}
+              ${prim ? '<span class="statetag is-info">Primary</span>' : ''}
+              <span class="panel__hspacer"></span>
+              <span class="roletag">Customer</span><span class="statetag is-ok">active</span></div>`).join('')
+            + (mem.length > 8 ? `<div class="tmember tmember--more">… and ${mem.length - 8} more</div>` : '')
+          : ''); }).join('')}</div>`;
+    } else if (ADM.pubTab === 'ds') {
+      tab = `<div class="acard"><div class="acard__head">
+          <span class="acard__title">Dealer import settings</span></div>
+        <div class="fact__label">Default dealer team role</div>
+        <div class="acct__ctlrow">${dchipStub('Role', 'Publisher')}
+          <button class="btn-secondary" data-stub>Save</button></div>
+        <p class="acct__hinttext">Role automatically assigned to new dealer teams on import.</p></div>
+        <div class="acard acard--flush"><div class="acard__head acard__head--pad">
+          <span class="acard__title">Import dealers from Dealer Space</span>
+          <span class="panel__hspacer"></span>
+          <span class="acct__caption">${DEALERS.length} dealers found</span>
+          ${dchipStub('Country', 'All')}${dchipStub('Show', 'Enabled only')}
+          <button class="btn-secondary" data-stub>Fetch from DS</button></div>
+        <table class="mtable mtable--acct"><thead><tr>
+          <th>Company</th><th>Country</th><th class="num">Contacts</th><th>Status</th><th class="num"></th>
+        </tr></thead><tbody>${DEALERS.map(([c, co, n, acc]) => `<tr>
+          <td><span class="mtable__name">${esc(c)}</span></td><td>${esc(co)}</td>
+          <td class="num">${n}</td>
+          <td><span class="statetag ${acc ? 'is-ok' : 'is-draft'}">${acc ? 'Active' : 'No access'}</span></td>
+          <td class="num"><button class="btn-quiet" data-stub>Manage</button></td></tr>`).join('')}
+        </tbody></table></div>`;
+    } else {
+      tab = `<p class="acct__lead">Dealers who have requested access. Import them via DS import
+          or create manually, then dismiss the request.</p>
+        <div class="acard acard--flush"><table class="mtable mtable--acct"><thead><tr>
+          <th>Name</th><th>Email</th><th>Username</th><th>Note</th><th class="num">Date</th><th class="num"></th>
+        </tr></thead><tbody>${ACCESS_REQ.map(([n, e, u, note, d]) => `<tr>
+          <td><span class="mtable__name">${esc(n)}</span></td><td>${esc(e)}</td><td>${esc(u)}</td>
+          <td class="c-note">${esc(note)}</td><td class="num">${d}</td>
+          <td class="num"><button class="btn-quiet is-danger" data-stub>Dismiss</button></td></tr>`).join('')}
+        </tbody></table></div>`;
+    }
+    inner = `<div class="acct__h1">Publishers</div>
+      <p class="acct__lead">Manage dealer teams, roles and employee access ·
+        ${TEAMS.length} teams, ${users} users</p>
+      ${atabs('pubTab', [['teams', 'Teams & roles'], ['ds', 'DS import'],
+        ['access', 'Access requests', ACCESS_REQ.length]])}
+      ${tab}`;
+  } else if (S.acctSec === 'users') {
+    inner = `<div class="acct__h1">Users<span class="acct__h1n">${ADM_USERS.length}</span></div>
+      <div class="acard acard--flush"><table class="mtable mtable--acct"><thead><tr>
+        <th>User ID</th><th>User name</th><th>Company</th>
+        <th class="num">DMC licenses</th><th class="num">ENCY licenses</th>
+      </tr></thead><tbody>${ADM_USERS.map(([id, n, c, dmc, ency]) => `<tr>
+        <td><span class="uid">${id}</span></td>
+        <td><span class="mtable__name">${esc(n)}</span></td><td>${esc(c) || '—'}</td>
+        <td class="num"><b class="licn">${dmc}</b></td>
+        <td class="num"><b class="licn licn--ency">${ency}</b></td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if (S.acctSec === 'activity') {
+    inner = `<div class="acct__h1">Activity log</div>
+      <div class="acct__ctlrow">${dchipStub('Actions', 'All')}${dchipStub('Roles', 'All')}
+        ${dchipStub('Users', 'All')}${dchipStub('Time', 'All')}</div>
+      <div class="acard acard--flush"><table class="mtable mtable--acct mtable--log"><thead><tr>
+        <th>When</th><th>Actor</th><th>Role</th><th>Action</th><th>Summary</th>
+      </tr></thead><tbody>${ACTIVITY.map(([w, a, act, sum, sub, hi]) => `<tr>
+        <td><span class="uid">${w}</span></td>
+        <td><span class="mtable__name">${esc(a)}</span></td>
+        <td><span class="roletag is-admin">Admin</span></td>
+        <td><span class="${hi === 'warn' ? 'act-hi' : hi === 'new' ? 'act-new' : ''}">${esc(act)}</span></td>
+        <td>${esc(sum)}<span class="act__sub">${esc(sub)}</span></td></tr>`).join('')}
+      </tbody></table></div>`;
+  } else if (S.acctSec === 'analytics') {
+    const f = { 7: .3, 30: 1, 90: 1.85 }[ADM.range];
+    const sc = n => fmt(Math.max(1, Math.round(n * f)));
+    const days = AN_DAYS.slice(90 - ADM.range);
+    const kpis = kpiRow([
+      ['Visits', sc(229), `last ${ADM.range} days`],
+      ['Unique visitors', sc(41), `last ${ADM.range} days`],
+      ['Page views', sc(1566), `last ${ADM.range} days`],
+      ['Trial licenses', sc(38), 'issued in range'],
+      ['Permanent licenses', sc(7), 'issued in range'],
+    ]);
+    const actTotal = days.reduce((a, d) => a + d.schema + d.post + d.interp + d.kit, 0);
+    const visTotal = days.reduce((a, d) => a + d.in + d.anon, 0);
+    inner = `<div class="acct__h1">Analytics</div>
+      ${atabs('range', [[7, '7 days'], [30, '30 days'], [90, '90 days']])}
+      ${kpis}
+      <div class="acct__grid">
+        ${colChart('Visits per day', fmt(visTotal) + ' visits', days,
+          [['in', 'Signed in', 'var(--ec-blue-soft)'], ['anon', 'Anonymous', 'var(--ec-fg-32)']])}
+        ${colChart('Activations per day', fmt(actTotal) + ' licenses issued', days, SEG.kind)}
+      </div>
+      <div class="acct__grid">
+        ${barCard('Visits by country', 'resolved from the visitor’s IP',
+          AN_COUNTRIES.map(([c, n]) => [c, '', { v: Math.max(1, Math.round(n * f)) }]),
+          [['v', 'Visits', 'var(--ec-blue-soft)']], { dense: 1 })}
+        <div class="acct__col">
+          <div class="acard acard--flush"><div class="acard__head acard__head--pad">
+            <span class="acard__title">Activations by dealer</span><span class="panel__hspacer"></span>
+            <span class="acct__caption">2 dealers</span></div>
+          <table class="mtable mtable--acct"><thead><tr>
+            <th>Dealer</th><th>Country</th><th class="num">Trial</th><th class="num">Permanent</th>
+          </tr></thead><tbody>
+            <tr><td><span class="mtable__name">Unattributed</span></td><td>—</td>
+              <td class="num">${sc(27)}</td><td class="num">0</td></tr>
+            <tr><td><span class="mtable__name">SprutCAM Tech ltd</span></td><td>—</td>
+              <td class="num">${sc(11)}</td><td class="num">${sc(7)}</td></tr>
+          </tbody></table></div>
+          ${barCard('Views by type', 'over the selected range',
+            [['Post Processor', '', { post: Math.round(153 * f) }],
+             ['Machine Schema', '', { schema: Math.round(67 * f) }],
+             ['Interpreter', '', { interp: Math.round(9 * f) }],
+             ['Kit', '', { kit: Math.round(4 * f) }]], SEG.kind, { dense: 1 })}
+        </div>
+      </div>
+      <div class="acard acard--flush"><div class="acard__head acard__head--pad">
+        <span class="acard__title">Components</span><span class="panel__hspacer"></span>
+        <span class="acct__caption">views and activations over the range · top ${AN_COMP.length} of 133</span>
+        <button class="btn-quiet" data-stub>Show all 133</button></div>
+      <table class="mtable mtable--acct"><thead><tr>
+        <th>Component</th><th class="num">Views</th><th class="num">Trial / perm</th><th class="num">Downloads</th>
+      </tr></thead><tbody>${AN_COMP.map(([n, k, v, t, pm, dl]) => `<tr>
+        <td><span class="compdot" style="background:${SEG.kind.find(s => s[0] === k)[2]}"></span>
+          <span class="mtable__name">${esc(n)}</span></td>
+        <td class="num">${Math.round(v * f)}</td><td class="num">${t} / ${pm}</td>
+        <td class="num">${dl}</td></tr>`).join('')}
+      </tbody></table></div>`;
   }
   body.innerHTML = `<div class="acct">
     <nav class="acct__nav">${ACCT_SECS.map(([group, secs]) =>
@@ -1020,7 +1318,24 @@ function renderAccount() {
   body.querySelectorAll('[data-ai]').forEach(b =>
     b.addEventListener('click', () => b.classList.toggle('is-on')));
   body.querySelectorAll('[data-stub]').forEach(b =>
-    b.addEventListener('click', () => toast('Stubbed in this prototype')));
+    b.addEventListener('click', e => { e.stopPropagation(); toast('Stubbed in this prototype'); }));
+  /* admin: tab switches, expandable teams, per-row Actions menus */
+  body.querySelectorAll('[data-atab]').forEach(b =>
+    b.addEventListener('click', () => {
+      const [k, v] = b.dataset.atab.split(':');
+      ADM[k] = k === 'range' ? +v : v; renderAccount(); }));
+  body.querySelectorAll('[data-team]').forEach(r =>
+    r.addEventListener('click', () => { const t = r.dataset.team;
+      ADM.pubOpen.has(t) ? ADM.pubOpen.delete(t) : ADM.pubOpen.add(t);
+      renderAccount(); }));
+  body.querySelectorAll('[data-actm]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation();
+      const p = DATA.find(x => x.id === +b.dataset.actm);
+      const acts = S.acctSec === 'requests'
+        ? [['open', 'Open'], ['edit', 'Edit'], ['accept', 'Accept'], ['reject', 'Reject'], ['del', 'Delete']]
+        : [['open', 'Open'], ['edit', 'Edit'], ['revoke', 'Revoke'], ['del', 'Delete']];
+      menu($('#sortMenu'), b, acts.map(([v, l]) => [v, l, false]),
+        v => v === 'open' ? openDetail(p) : toast('Stubbed in this prototype')); }));
 }
 
 /* ------------------------------------------------------------- boot ------- */
